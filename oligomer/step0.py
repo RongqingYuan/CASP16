@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 import sys
+import time
 
 oligomer_path = "/data/data1/conglab/qcong/CASP16/oligomers/"
 oligomer_list = [txt for txt in os.listdir(
@@ -16,60 +17,52 @@ if not os.path.exists(csv_path):
 if not os.path.exists(csv_raw_path):
     os.makedirs(csv_raw_path)
 all_data = {}
+
 # read the oligomer list
 # this is too messy, we need to completely re-write this part compared to the monomer part
 for oligomer in oligomer_list:
     oligomer_file = oligomer_path + oligomer
     data = []
     with open(oligomer_file, "r") as f:
+        flag = 0  # to indicate if we have gone through the header line
         for line in f:
-            line = line.split()
-            if len(line) > 10:
-                data.append(line)
+            tmp = line.split('[')
+            if len(tmp) == 1:
+                tmp = tmp[0].split()
+                if len(tmp) > 5 and flag == 1:
+                    # there is something wrong with the data, print it out
+                    print("Error: some data is missing for {}".format(oligomer))
+                if len(tmp) > 5 and flag == 0:
+                    data.append(tmp)
+                    flag = 1
 
-    print(data)
-    print(data[0].__len__())
-    print(data[1].__len__())
-    print(data[0])
-    print(data[1])
-    print(data[1][19])
-    print(data[1][-6])
-
-    # deal with the symmetric group...
-    if data[0].__len__() < data[1].__len__():
-        for i in range(1, len(data)):
-
-            if not data[i][-1].startswith("c") and not data[i][-1].startswith("-"):
-                print("something other symmetric group appears for {}".format(oligomer))
-                print(data[i])
-                sys.exit(0)  # not sure about the symmetric group...
-
-            c_count = [c for c in data[i] if c.startswith("c")].__len__()
-            d_count = [d for d in data[i] if d.startswith("d")].__len__()
-            t_count = [t for t in data[i] if t.startswith("t")].__len__()
-            sym_count = c_count + d_count + t_count
-            if sym_count > 1:
-                tmp = data[i][-sym_count:]
-                sym_group_rmsd = " ".join(tmp)
-                data[i] = data[i][:-sym_count]
-                data[i].append(sym_group_rmsd)
-
-    # deal with contact...
-    if data[0].__len__() < data[1].__len__():
-        # from data[19] to data[-6] is the data we need to concat into one column
-        for i in range(1, len(data)):
-            # print(data[i][19:-5])
-            # get the slice from data[19] to data[-5]
-            tmp = data[i][-5:]
-            contact_score = " ".join(data[i][19:-5])
-            # print(contact_score)
-            data[i] = data[i][:19]
-            data[i].append(contact_score)
-            data[i].extend(tmp)
-
-    assert data[0].__len__() == data[1].__len__()
-
+                continue
+            part_1 = tmp[0].split()
+            tmp = tmp[1]
+            tmp = tmp.split(']')
+            contact_score = tmp[0]
+            part_2 = tmp[1].split()[:5]  # the 5th is not used. a placeholder
+            contact_score = contact_score.split(',')
+            try:
+                contact_score = [float(score) for score in contact_score]
+                mean_score = str(np.mean(contact_score))
+            except ValueError:
+                print("ValueError: {} Probably due to missing value".format(oligomer))
+                mean_score = "0"  # probably the predictor didn't even get a complex
+            line = part_1 + [mean_score] + part_2
+            # if type(contact_score) == list:
+            #     line = part_1 + contact_score + part_2
+            # else:
+            #     line = part_1 + [contact_score] + part_2
+            data.append(line)
+    # print(data)
     all_data[oligomer] = data
+    # print(oligomer)
+    length = len(data[0])
+    for i in range(1, len(data)):
+        if len(data[i]) != length:
+            print(
+                "Error: the length of the data is not consistent for {}".format(oligomer))
 
     # convert the data to dataframe, the first row is the column names, the first column is the index
     data = pd.DataFrame(data)
@@ -81,28 +74,23 @@ for oligomer in oligomer_list:
     data = data.set_index("Model")
     data.to_csv(csv_raw_path + oligomer[:-4] + ".csv")  # this is good raw data
 
-    print(data)
-    # data = data.drop(, axis=1)
+    # remove the "GR#" column and "#" column
     data = data.drop(["#", "Gr.Code", "Stoich.", "Symm."], axis=1)
-    # in QSglob_perInterface, the values are in list, we need to get all of them and take the mean
-    data.replace("N/A", np.nan, inplace=True)
-    data.replace("-", np.nan, inplace=True)
-    data = data.fillna(data.mean())
-    data["QSglob_perInterface"] = data["QSglob_perInterface"].apply(
-        lambda x: np.mean([float(i) for i in str(x).split("[")[-1].split("]")[0].split(",")]))
-    data = data.drop(["QS_Interfaces", "SymmGr.RMSD"], axis=1)
-
-    print(data)
     # # check the data shape
     # print(data.shape)
     # # print the first 5 rows
     # print(data.head())
 
     # save the data to a csv file
+    data.to_csv(csv_raw_path + oligomer[:-4] + ".csv")
 
     # impute the N/A values with the mean value of the column
     # impute the - values with the mean value of the column
     # data = data.apply(pd.to_numeric)
+    data.replace("N/A", np.nan, inplace=True)
+    data.replace("-", np.nan, inplace=True)
+    data = data.fillna(data.mean())
+    data = data.drop(["QS_Interfaces", "SymmGr.RMSD"], axis=1)
 
     # # print only the first row
     # print(data.head(1))
@@ -123,10 +111,12 @@ for oligomer in oligomer_list:
     except ValueError:
         print("ValueError: ", oligomer)
         sys.exit()
+    # # normalize the data; the first column is the index so we don't normalize it
+    # data.iloc[:, 1:] = (data.iloc[:, 1:] - data.iloc[:,
+    #                     1:].mean()) / data.iloc[:, 1:].std()
+    # print(data.head())
 
     # normalize the data with the z-score
     data = (data - data.mean()) / data.std()
     # save the normalized data to csv file
     data.to_csv(csv_path + oligomer[:-4] + ".csv")
-
-    # break
