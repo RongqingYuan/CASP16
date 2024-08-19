@@ -47,7 +47,8 @@ for oligomer in oligomer_list:
                 contact_score = [float(score) for score in contact_score]
                 mean_score = str(np.mean(contact_score))
             except ValueError:
-                print("ValueError: {} Probably due to missing value".format(oligomer))
+                print("ValueError: {} for contact score. Probably due to missing value. Will assign 0".format(
+                    oligomer))
                 mean_score = "0"  # probably the predictor didn't even get a complex
             line = part_1 + [mean_score] + part_2
             # if type(contact_score) == list:
@@ -89,7 +90,6 @@ for oligomer in oligomer_list:
     # data = data.apply(pd.to_numeric)
     data.replace("N/A", np.nan, inplace=True)
     data.replace("-", np.nan, inplace=True)
-    data = data.fillna(data.mean())
     data = data.drop(["QS_Interfaces", "SymmGr.RMSD"], axis=1)
 
     # # print only the first row
@@ -99,6 +99,7 @@ for oligomer in oligomer_list:
 
     # convert the data type to float
     data = data.astype(float)
+    data = data.fillna(data.mean())
 
     try:
         data = data.astype(float)

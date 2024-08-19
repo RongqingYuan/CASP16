@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 import sys
+import time
 
 monomer_path = "/data/data1/conglab/qcong/CASP16/monomers/"
 monomer_list = [txt for txt in os.listdir(
@@ -34,8 +35,14 @@ for monomer in monomer_list:
     # set the "Model" column as the index
     data = data.set_index("Model")
     # remove the "GR#" column and "#" column
-    data = data.drop("GR#", axis=1)
-    data = data.drop("#", axis=1)
+    data.to_csv(csv_raw_path + monomer[:-4] + ".csv")
+
+    # remove the "GR#" column and "#" column
+    data = data.drop(["GR#", "#"], axis=1)
+    # "DipDiff", "BBscore", "SCscore" does not contribute to the prediction, so we remove them as well
+    data = data.drop(["DipDiff", "BBscore", "SCscore"], axis=1)
+    # remove the "RANK" column
+    data = data.drop(["RANK"], axis=1)
 
     # # check the data shape
     # print(data.shape)
@@ -43,14 +50,15 @@ for monomer in monomer_list:
     # print(data.head())
 
     # save the data to a csv file
-    data.to_csv(csv_raw_path + monomer[:-4] + ".csv")
 
     # impute the N/A values with the mean value of the column
     # impute the - values with the mean value of the column
     # data = data.apply(pd.to_numeric)
     data.replace("N/A", np.nan, inplace=True)
     data.replace("-", np.nan, inplace=True)
-    data = data.fillna(data.mean())
+    # impute NaN values with the mean value of the column
+    # print data head
+    # sleep for 5 seconds
 
     # # print only the first row
     # print(data.head(1))
@@ -59,6 +67,10 @@ for monomer in monomer_list:
 
     # convert the data type to float
     data = data.astype(float)
+    data = data.fillna(data.mean())
+
+    # print(data.head())
+    # time.sleep(5)
 
     try:
         data = data.astype(float)
