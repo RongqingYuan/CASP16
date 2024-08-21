@@ -12,21 +12,24 @@ csv_list = [txt for txt in os.listdir(csv_path) if txt.endswith(".csv")]
 
 # read all data and concatenate them into one big dataframe
 
-domain = True  # can change
+use_domain = False  # can change
+use_domain = True  # can change
+score_type = "best"
+score_type = "first"
 data = pd.DataFrame()
 
 
 for csv_file in csv_list:
     print("Processing {}".format(csv_file))
     parse_csv_file = csv_file.split("-")
-    if len(parse_csv_file) == 2 and domain:
+    if len(parse_csv_file) == 2 and use_domain:
         data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
         print(data_tmp.shape)
         if data_tmp.shape[1] == 35:
             print("something wrong with {}".format(csv_file))
             sys.exit(0)
         data = pd.concat([data, data_tmp], axis=0)
-    if len(parse_csv_file) == 1 and not domain:
+    if len(parse_csv_file) == 1 and not use_domain:
         data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
         print(data_tmp.shape)
         if data_tmp.shape[1] == 35:
@@ -93,9 +96,12 @@ for column in data.columns:
         if target_info not in score_by_target:
             score_by_target[target_info] = {}
         group_info = model.split("TS")[1]
-        if domain == True:
+        if use_domain == True:
+            # print(group_info)
             group_info = group_info.split("-")
+            # print(group_info)
             domain = group_info[1]
+            # print(domain)
             group_info = group_info[0]
 
             group = group_info.split("_")[0]
@@ -126,6 +132,7 @@ for column in data.columns:
                 max(score_by_target[target][group]))
 
     first_accumulate_score_by_group = {}
+    # print(first_score_by_group)
     best_accumulate_score_by_group = {}
     for group in first_score_by_group:
         first_accumulate_score_by_group[group] = sum(
@@ -145,39 +152,45 @@ for column in data.columns:
     # first_x = list(sorted_first_accumulate_score_by_group.keys())
     # first_y = list(sorted_first_accumulate_score_by_group.values())
 
-    best_x = list(sorted_best_accumulate_score_by_group.keys())
-    best_y = list(sorted_best_accumulate_score_by_group.values())
-    print(best_x.__len__())
-    print(best_y.__len__())
+    # I am too lazy :(
+
+    if score_type == "first":
+        best_x = list(sorted_first_accumulate_score_by_group.keys())
+        best_y = list(sorted_first_accumulate_score_by_group.values())
+    elif score_type == "best":
+        best_x = list(sorted_best_accumulate_score_by_group.keys())
+        best_y = list(sorted_best_accumulate_score_by_group.values())
+
+    # print(best_x.__len__())
+    # print(best_y.__len__())
+
     # plot the values in best_accumulate_score_by_group, use boxplot
     # axes[count // 6, count % 6].boxplot(first_y, positions=first_x, patch_artist=True)
     # axes[count // 6, count % 6].boxplot(best_y, positions=best_x, patch_artist=True)
 
     # add scatter points on the boxplot
     scatter_x = np.full_like(best_x, 1, dtype=int)
-    print(scatter_x)
+    # print(scatter_x)
     axes[count // 6, count %
          6].scatter(scatter_x, best_y, color="red", marker="o")
-
     axes[count // 6, count %
          6].boxplot(best_y, positions=[1])
     # axes[count // 6, count % 6].set_title(column)
     axes[count // 6, count % 6].set_xticklabels(column, rotation=45)
-    axes[count // 6, count % 6].set_ylabel("Accumulate Best Score")
-
+    axes[count // 6, count % 6].set_ylabel("Accumulate Score")
     count += 1
 # remove the empty plots
 for i in range(count, 36):
     fig.delaxes(axes.flatten()[i])
 # set title for the whole figure
-if domain:
+if use_domain:
     fig.suptitle(
-        "Accumulate Best Domain Score by Group for all Targets", fontsize=20)
+        "Accumulate {} domain score by group for all targets".format(score_type), fontsize=20)
     # plt.tight_layout()
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # save some space for the title
-    plt.savefig("./accumulate_best_domain_score.png", dpi=300)
+    plt.savefig("./accumulate_{}_domain_score.png".format(score_type), dpi=300)
 else:
     fig.suptitle(
-        "Accumulate Best Whole Score by Group for all Targets", fontsize=20)
+        "Accumulate {} whole score by group for all targets".format(score_type), fontsize=20)
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # save some space for the title
-    plt.savefig("./accumulate_best_whole_score.png", dpi=300)
+    plt.savefig("./accumulate_{}_whole_score.png".format(score_type), dpi=300)
