@@ -65,5 +65,30 @@ data_whole = data_whole[((data_whole >= -2) | data_whole.isna()).all(axis=1)]
 # data_whole.to_csv(csv_tmp_path + monomer[:-4] + ".csv")
 
 # after removing the outliers, we need to do z-score normalization again
-data_whole = (data_whole - data_whole.mean()) / data_whole.std()
+# data_whole = (data_whole - data_whole.mean()) / data_whole.std()
 print(data_whole.shape)
+data_whole.to_csv("./csv_mean_tmp_0.csv")
+
+data_whole['prefix'] = data_whole.index.str.split('_').str[0]
+data_whole['group'] = data_whole.index.str.split('_').str[1].astype(int)
+data_whole_mean = data_whole.groupby('prefix').mean()
+# save the data to csv file
+data_whole_mean.to_csv("./csv_mean_tmp_1.csv")
+data_whole_mean = (data_whole_mean - data_whole_mean.mean()
+                   ) / data_whole_mean.std()
+# fill nan with 0
+data_whole_mean.fillna(0, inplace=True)
+
+print(data_whole_mean.head())
+print(data_whole_mean.shape)
+data_whole_mean.index = data_whole_mean.index.str.split('TS').map(tuple)
+print(len(data_whole_mean.index))
+data_whole_mean.index = pd.MultiIndex.from_tuples(
+    data_whole_mean.index, names=['target', 'group'])
+data_whole_mean = data_whole_mean.stack().unstack('target')
+data_whole_mean.index = [f'{b}-{c}' for b, c in data_whole_mean.index]
+# fill nan with 0
+data_whole_mean.fillna(0, inplace=True)
+print(data_whole_mean.index.__len__())
+# save the data to csv file
+data_whole_mean.to_csv("./csv_mean_transposed.csv")
