@@ -39,27 +39,38 @@ for monomer in monomer_list:
                     if len(group) == 1:
                         group = group[0]
                         target = target
-                        if target not in all_whole_data:
-                            all_whole_data[target] = {}
-                        if group not in all_whole_data[target]:
-                            all_whole_data[target][group] = {}
+
+                        # if target not in all_whole_data:
+                        #     all_whole_data[target] = {}
+                        # if group not in all_whole_data[target]:
+                        #     all_whole_data[target][group] = {}
+                        # for measure, value in zip(measures, raw):
+                        #     if measure not in all_whole_data[target][group]:
+                        #         all_whole_data[target][group][measure] = []
+                        #     all_whole_data[target][group][measure].append(
+                        #         value)
                         for measure, value in zip(measures, raw):
-                            if measure not in all_whole_data[target][group]:
-                                all_whole_data[target][group][measure] = []
-                            all_whole_data[target][group][measure].append(
-                                value)
+                            key = measure + "+" + group + "+" + target
+                            if key not in all_whole_data:
+                                all_whole_data[key] = value
+
                     elif len(group) == 2:
                         target = target + group[1]
                         group = group[0]
-                        if target not in all_domain_data:
-                            all_domain_data[target] = {}
-                        if group not in all_domain_data[target]:
-                            all_domain_data[target][group] = {}
+
+                        # if target not in all_domain_data:
+                        #     all_domain_data[target] = {}
+                        # if group not in all_domain_data[target]:
+                        #     all_domain_data[target][group] = {}
+                        # for measure, value in zip(measures, raw):
+                        #     if measure not in all_domain_data[target][group]:
+                        #         all_domain_data[target][group][measure] = []
+                        #     all_domain_data[target][group][measure].append(
+                        #         value)
                         for measure, value in zip(measures, raw):
-                            if measure not in all_domain_data[target][group]:
-                                all_domain_data[target][group][measure] = []
-                            all_domain_data[target][group][measure].append(
-                                value)
+                            key = measure + "_" + group + "_" + target
+                            if key not in all_domain_data:
+                                all_domain_data[key] = value
 
     # # print(data[0])
     # all_data[monomer] = data
@@ -151,15 +162,36 @@ for monomer in monomer_list:
     # # save the normalized data to csv file
 
     # data.to_csv(csv_path + monomer[:-4] + ".csv")
-df_whole = pd.DataFrame()
-for target in all_whole_data:
-    print(target)
-    for group in all_whole_data[target]:
-        print(group)
-        for measure, value in all_whole_data[target][group].items():
-            value = value[0]
-            column = target
-            row = measure + "_" + group
-            # save it as dataframe
-            df_whole.loc[row, column] = value
-df_whole.to_csv("./whole_transpose.csv")
+new_whole_data = {}
+for key, value in all_whole_data.items():
+    measures, group, target = key.split("+")
+    new_key = measures+"+"+group
+    if new_key not in new_whole_data:
+        new_whole_data[new_key] = {}
+    new_whole_data[new_key][target] = value
+
+# write to csv file
+with open("./whole_transpose.csv", "w") as f:
+    for key, value in new_whole_data.items():
+        for target, value in value.items():
+            f.write(target+",")
+        break
+    f.write("\n")
+    for key, value in new_whole_data.items():
+        f.write(key+",")
+        for target, value in value.items():
+            f.write(value+",")
+
+        f.write("\n")
+
+# for target in all_whole_data:
+#     print(target)
+#     for group in all_whole_data[target]:
+#         print(group)
+#         for measure, value in all_whole_data[target][group].items():
+#             value = value[0]
+#             column = target
+#             row = measure + "_" + group
+#             # save it as dataframe
+#             df_whole.loc[row, column] = value
+# df_whole.to_csv("./whole_transpose.csv")
