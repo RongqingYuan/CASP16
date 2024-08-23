@@ -14,8 +14,8 @@ csv_list = [txt for txt in os.listdir(csv_path) if txt.endswith(".csv")]
 
 use_domain = False  # can change
 use_domain = True  # can change
-score_type = "best"
 score_type = "first"
+score_type = "best"
 data = pd.DataFrame()
 
 
@@ -171,13 +171,18 @@ for column in data.columns:
     # add scatter points on the boxplot
     scatter_x = np.full_like(best_x, 1, dtype=int)
     # print(scatter_x)
+    # set the y axis range
+    axes[count // 6, count % 6].set_ylim(-200, 200)
+    # axes[count // 6, count % 6].set_ylim(-60, 40)
     axes[count // 6, count %
          6].scatter(scatter_x, best_y, color="red", marker="o")
     axes[count // 6, count %
          6].boxplot(best_y, positions=[1])
-    # axes[count // 6, count % 6].set_title(column)
-    axes[count // 6, count % 6].set_xticklabels(column, rotation=45)
-    axes[count // 6, count % 6].set_ylabel("Accumulate Score")
+    axes[count // 6, count % 6].set_title(column, fontsize=25)
+    # axes[count // 6, count % 6].set_xticklabels(column, rotation=45)
+    # set the y axis tick size
+    axes[count // 6, count % 6].tick_params(axis='y', labelsize=25)
+    axes[count // 6, count % 6].set_ylabel("Accumulate Score", fontsize=25)
     count += 1
 # remove the empty plots
 for i in range(count, 36):
@@ -185,12 +190,12 @@ for i in range(count, 36):
 # set title for the whole figure
 if use_domain:
     fig.suptitle(
-        "Accumulate {} domain score by group for all targets".format(score_type), fontsize=20)
+        "Accumulate {} domain score by group for all targets".format(score_type), fontsize=25)
     # plt.tight_layout()
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # save some space for the title
     plt.savefig("./accumulate_{}_domain_score.png".format(score_type), dpi=300)
 else:
     fig.suptitle(
-        "Accumulate {} whole score by group for all targets".format(score_type), fontsize=20)
+        "Accumulate {} whole score by group for all targets".format(score_type), fontsize=25)
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # save some space for the title
     plt.savefig("./accumulate_{}_whole_score.png".format(score_type), dpi=300)
