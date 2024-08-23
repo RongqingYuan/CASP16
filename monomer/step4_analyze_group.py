@@ -87,6 +87,9 @@ data_whole_mean.index = pd.MultiIndex.from_tuples(
     data_whole_mean.index, names=['target', 'group'])
 data_whole_mean = data_whole_mean.stack().unstack('target')
 data_whole_mean.index = [f'{b}-{c}' for b, c in data_whole_mean.index]
+# normalize the data with the z-score again
+data_whole_mean = (data_whole_mean - data_whole_mean.mean()
+                   ) / data_whole_mean.std()
 # fill nan with 0
 data_whole_mean.fillna(0, inplace=True)
 print(data_whole_mean.index.__len__())
