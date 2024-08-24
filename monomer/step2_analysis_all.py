@@ -66,6 +66,9 @@ if not FlexE_remove and data["FlexE"].nunique() == 1:
     print("FlexE column has only one unique value for {}, so we drop it".format(csv_file))
 
 
+# drop these 3 columns: NP_P, NP, err
+data = data.drop(["NP_P", "NP", "err"], axis=1)
+
 print(data.head())
 
 # run kmo test and bartlett test first
@@ -96,7 +99,7 @@ for c in matrices_var["eigenvalue before rotation"]:
         s = matrices_var["cumulative variance contributed before rotation"][N-1]
         print("Use {} factors, cumulative variance contributed is {}".format(N, s))
         break
-N = 5
+N = 4
 # it is used to see how many factors are appropriate, generally it is taken to the left and right of the smooth place, of course, it is also necessary to combine the contribution rate
 # matplotlib.rcParams["font.family"] = "SimHei"
 ev, v = Load_Matrix.get_eigenvalues()
@@ -194,11 +197,10 @@ for i in range(shape[0]):
     score_dict[data.index[i]] = score[i]
 
 
-group_dict_domain = {}
-group_dict = {}
-group_target_dict = {}
-group_target_domain_dict = {}
-group_best_dict = {}
+group_dict = {}  # {group_id: [score1, score2, ...]}
+group_dict_domain = {}  # {group_id: [score1, score2, ...]}
+group_target_dict = {}  # {stage_target_group: [score1, score2, ...]}
+group_target_domain_dict = {}  # {stage_target_group: [score1, score2, ...]}
 group_first_dict = {}
 group_first_domain_dict = {}
 
@@ -264,13 +266,15 @@ for k, v in score_dict.items():
 
 
 group_target_domain_best_dict = {}
+# {group_id: [best_score_target1, best_score_target2, ...]}
 group_scores_domain_dict = {}
+
 for k, v in group_target_domain_dict.items():
-    group = k.split("_")[2]
+    group_id = k.split("_")[2]
     group_target_domain_best_dict[k] = max(v)
-    if group not in group_scores_domain_dict:
-        group_scores_domain_dict[group] = []
-    group_scores_domain_dict[group].append(max(v))
+    if group_id not in group_scores_domain_dict:
+        group_scores_domain_dict[group_id] = []
+    group_scores_domain_dict[group_id].append(max(v))
 
 print(group_target_domain_best_dict)
 print(group_scores_domain_dict.__len__())
@@ -302,13 +306,14 @@ with open("domain_score_first_model.txt", "w") as f:
 # {'456': 52.47606938219763, '022': 50.6724223587766, '051': 48.73931303606964, '345': 48.28194568763339, '110': 47.71679543723419, '052': 46.8975765339637, '462': 45.710855410626614, '241': 44.74558722074533, '294': 43.855970611855035, '147': 41.09445883711779, '019': 41.08698706682758, '148': 40.51538394275573, '221': 40.2248087885984, '312': 39.469134772318355, '419': 37.687393286012885, '208': 37.615120255053895, '015': 37.15989732821828, '304': 37.04620612803516, '267': 36.13535508918436, '028': 34.87433664764452, '264': 34.03526046432325, '331': 31.67392497759025, '319': 31.455604182552012, '425': 29.02148174464271, '301': 28.399242292818368, '314': 27.783778290668625, '284': 27.763582052786905, '287': 26.71726906703062, '164': 26.383913132354174, '375': 26.214845284836873, '298': 25.52631457252373, '075': 25.006934472501932, '122': 24.920217409144076, '293': 24.754981478363906, '235': 23.68968661658768, '269': 22.589412826209564, '465': 22.476812700915094, '475': 21.979739084968724, '079': 21.967712024049405, '163': 21.73381146710162, '272': 20.872987380672345, '286': 19.545451184260294, '369': 18.173555519771128, '311': 17.082711698787023, '262': 15.30233176780295, '023': 15.057760876456797, '393': 14.49786631767398, '290': 13.350465239660016, '145': 12.934003386776393, '423': 12.630258963837901, '171': 12.23612574607281, '091': 11.971355056536567, '388': 11.704657479932232, '322': 11.588424321912392, '274': 11.241658588262776, '204': 11.233727528015073, '494': 10.893696089005626, '196': 10.135482069140751, '450': 10.049474051120782, '014': 9.42633564723013, '059': 9.14008265844257, '397': 9.04575103141413, '198': 7.048101344791274, '218': 6.2810544732665265, '489': 6.203965828692558, '191': 6.136138424447427, '380': 5.790099873562435, '031': 5.701016775855994, '481': 5.649941875032565, '358': 5.087828548960176, '219': 4.957992552039616, '167': 4.475760950069823, '323': 3.608044016550222, '468': 3.3105477549994045, '325': 2.6899676577688556, '338': 2.5630876696177904, '159': 2.5349973983245255, '085': 1.5289398861129344, '276': 1.3078224753604597, '189': 1.2861426745153284, '033': 1.0910284453650996, '376': 1.0523919511927815, '351': 0.7619487734307631, '008': 0.7311567340882534, '231': 0.5999491156372105, '143': 0.3729567717888606, '174': 0.33347629003937546, '225': 0.28631994414115725, '386': 0.28470543419013344, '049': 0.2747199323098795, '271': 0.25011441051622557, '017': 0.043597385795303256, '112': -0.06232390713420108, '355': -0.06888844249273791, '400': -0.129219005443159, '187': -0.7586178597340996, '281': -0.9328895855333783, '132': -1.2657692083328769, '040': -1.8398811434965614, '117': -2.8439726650753845, '357': -3.855013663217005, '337': -10.921967785032171, '300': -13.279211201471558, '114': -14.246781439489908, '212': -22.506397321098152, '139': -25.86372494967308, '361': -35.48521109616379, '261': -36.158921415672765, '120': -43.59309011372384}
 
 group_target_best_dict = {}
+# {group_id: [best_score_target1, best_score_target2, ...]}
 group_scores_dict = {}
 for k, v in group_target_dict.items():
-    group = k.split("_")[2]
+    group_id = k.split("_")[2]
     group_target_best_dict[k] = max(v)
-    if group not in group_scores_dict:
-        group_scores_dict[group] = []
-    group_scores_dict[group].append(max(v))
+    if group_id not in group_scores_dict:
+        group_scores_dict[group_id] = []
+    group_scores_dict[group_id].append(max(v))
 
 print(group_target_best_dict)
 print(group_scores_dict.__len__())
