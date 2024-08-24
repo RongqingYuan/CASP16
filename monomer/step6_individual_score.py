@@ -64,12 +64,16 @@ measure_of_interest_1 = "RMS_CA"
 # get the column for the measure of interests and measure of interests 1
 # data_whole = data_whole[[measure_of_interest, measure_of_interest_1]]
 
+use_domain = False
+if use_domain:
+    data_whole.index = data_whole.index.str.replace(
+        r'(\w+)(TS\d+_\d+)-(\w+)', r'\1-\3\2')
 print(data_whole.head())
 
 data_whole['prefix'] = data_whole.index.str.split('_').str[0]
-data_whole['group'] = data_whole.index.str.split('_').str[1].astype(int)
+data_whole['group'] = data_whole.index.str.split('_').str[1]
 print(data_whole)
-data_whole_mean = data_whole.groupby('prefix').mean()
+data_whole_mean = data_whole.groupby('prefix').max()
 print(data_whole_mean.head())
 print(data_whole_mean.shape)
 data_whole_mean = pd.DataFrame(data_whole_mean[measure_of_interest])
@@ -85,13 +89,22 @@ data_whole_mean.index = [f'{b}-{c}' for b, c in data_whole_mean.index]
 
 print(data_whole_mean.head())
 print(data_whole_mean.shape)
+
+if use_domain:
+    end = "domain"
+else:
+    end = "whole"
 data_whole_mean.to_csv(
-    './individual_score_raw-{}.csv'.format(measure_of_interest))
+    './individual_score_raw-{}-{}.csv'.format(measure_of_interest, end))
 
 # save the data
 # normalize the data with the z-score again
+# transpose the data
+data_whole_mean = data_whole_mean.T
 data_whole_mean = (data_whole_mean - data_whole_mean.mean()
                    ) / data_whole_mean.std()
 # fill nan with 0
 data_whole_mean.fillna(0, inplace=True)
-data_whole_mean.to_csv('./individual_score-{}.csv'.format(measure_of_interest))
+
+data_whole_mean.to_csv(
+    './individual_score-{}-{}.csv'.format(measure_of_interest, end))
