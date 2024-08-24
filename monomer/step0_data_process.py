@@ -9,17 +9,46 @@ monomer_list = [txt for txt in os.listdir(
     monomer_path) if txt.endswith(".txt")]
 
 
+# file_list = ['T0237-D1.txt', 'T0240-D1.txt', 'T0240-D2.txt', 'T0241.txt']
+
+evaluation_unit = []
+whole_structure = []
+
+for file_name in monomer_list:
+    t_code = file_name.split('-')[0]
+    same_protein = [f for f in monomer_list if f.startswith(t_code)]
+
+    if '-D' in file_name:
+        if len(same_protein) == 1 and '-D1' in file_name:
+            evaluation_unit.append(file_name)
+            whole_structure.append(file_name)
+            # both evaluation unit and whole structure
+        else:
+            evaluation_unit.append(file_name)
+    else:
+        whole_structure.append(file_name)
+
+print("evaluation unit: ", evaluation_unit)
+print("whole structure: ", whole_structure)
+monomer_data_raw_path = "./monomer_data/raw/"
+monomer_data_EU_path = "./monomer_data/EU/"
+monomer_data_whole_path = "./monomer_data/whole/"
+
+
 csv_path = "./csv/"
 csv_raw_path = "./csv_raw/"
 csv_tmp_path = "./csv_tmp/"
-if not os.path.exists(csv_path):
-    os.makedirs(csv_path)
 
-if not os.path.exists(csv_raw_path):
-    os.makedirs(csv_raw_path)
+if not os.path.exists(monomer_data_raw_path):
+    os.makedirs(monomer_data_raw_path)
 
-if not os.path.exists(csv_tmp_path):
-    os.makedirs(csv_tmp_path)
+if not os.path.exists(monomer_data_EU_path):
+    os.makedirs(monomer_data_EU_path)
+
+if not os.path.exists(monomer_data_whole_path):
+    os.makedirs(monomer_data_whole_path)
+
+# sys.exit()
 
 all_data = {}
 # read the monomer list
@@ -42,7 +71,7 @@ for monomer in monomer_list:
     # set the "Model" column as the index
     data = data.set_index("Model")
     # save it as complete raw data, in case we need it later
-    data.to_csv(csv_raw_path + monomer[:-4] + ".csv")
+    data.to_csv(monomer_data_raw_path + monomer[:-4] + ".csv")
 
     # remove the "GR#" column and "#" column
     data = data.drop(["GR#", "#"], axis=1)
@@ -118,5 +147,11 @@ for monomer in monomer_list:
     #                     1:].mean()) / data.iloc[:, 1:].std()
     # print(data.head())
     # save the normalized data to csv file
-
-    data.to_csv(csv_path + monomer[:-4] + ".csv")
+    # data.to_csv(csv_path + monomer[:-4] + ".csv")
+    if monomer in evaluation_unit:
+        data.to_csv(monomer_data_EU_path + monomer[:-4] + ".csv")
+    if monomer in whole_structure:
+        data.to_csv(monomer_data_whole_path + monomer[:-4] + ".csv")
+    # else:
+    #     print("Error when saving the data: ", monomer)
+    #     sys.exit()
