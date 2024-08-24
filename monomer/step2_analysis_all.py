@@ -11,7 +11,16 @@ from sympy import *
 from matplotlib import pyplot as plt
 from factor_analyzer import FactorAnalyzer, calculate_kmo, calculate_bartlett_sphericity
 
-csv_path = "./csv/"
+csv_path = "./monomer_data/whole/"
+# csv_path = "./monomer_data/EU/"
+png_dir = "./new_png/"
+score_dir = "./new_score/"
+if not os.path.exists(png_dir):
+    os.makedirs(png_dir)
+
+if not os.path.exists(score_dir):
+    os.makedirs(score_dir)
+
 csv_list = [txt for txt in os.listdir(csv_path) if txt.endswith(".csv")]
 
 # csv_file = csv_path + csv_list[3]
@@ -112,7 +121,7 @@ plt.title('Eigenvalues vs number of factors',
 plt.xlabel('number of factors', fontdict={'weight': 'normal', 'size': 15})
 plt.ylabel('Eigenvalues', fontdict={'weight': 'normal', 'size': 15})
 plt.grid()
-plt.savefig('Eigenvalues_vs_number_of_factors.png', dpi=300)
+plt.savefig(png_dir+'Eigenvalues_vs_number_of_factors.png', dpi=300)
 
 
 Load_Matrix_rotated = FactorAnalyzer(
@@ -142,7 +151,7 @@ ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
 plt.title("Factor Analysis (abs)", fontsize="xx-large")
 plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
 # 保存图片
-plt.savefig("FA_abs.png")
+plt.savefig(png_dir+"FA_abs.png")
 plt.show()  # 显示图片
 
 
@@ -157,9 +166,9 @@ ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
 plt.title("Factor Analysis", fontsize="xx-large")
 plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
 # 保存图片
-plt.savefig("FA.png")
+plt.savefig(png_dir + "FA.png")
 plt.show()  # 显示图片
-
+# sys.exit(0)
 # 计算因子得分（回归方法）（系数矩阵的逆乘以因子载荷矩阵）
 f_corr = data.corr()  # 皮尔逊相关系数
 X1 = np.mat(f_corr)
@@ -290,7 +299,7 @@ for k, v in group_scores_domain_dict.items():
 # sort the dictionary by value
 group_domains_score_dict = dict(
     sorted(group_domains_score_dict.items(), key=lambda item: item[1], reverse=True))
-with open("domain_score_best_model.txt", "w") as f:
+with open(score_dir + "domain_score_best_model.txt", "w") as f:
     for k, v in group_domains_score_dict.items():
         # 3 digits
         f.write("Group {}: {}\n".format(k, round(v, 3)))
@@ -298,7 +307,7 @@ with open("domain_score_best_model.txt", "w") as f:
 # sort the dictionary by value
 group_first_domain_dict = dict(
     sorted(group_first_domain_dict.items(), key=lambda item: sum(item[1]), reverse=True))
-with open("domain_score_first_model.txt", "w") as f:
+with open(score_dir + "domain_score_first_model.txt", "w") as f:
     for k, v in group_first_domain_dict.items():
         # 3 digits
         f.write("Group {}: {}\n".format(k, round(sum(v), 3)))
@@ -329,7 +338,7 @@ for k, v in group_scores_dict.items():
 # sort the dictionary by value
 group_score_dict = dict(
     sorted(group_score_dict.items(), key=lambda item: item[1], reverse=True))
-with open("score_best_model.txt", "w") as f:
+with open(score_dir + "score_best_model.txt", "w") as f:
     for k, v in group_score_dict.items():
         # 3 digits
         f.write("Group {}: {}\n".format(k, round(v, 3)))
@@ -337,7 +346,7 @@ with open("score_best_model.txt", "w") as f:
 # sort the dictionary by value
 group_first_dict = dict(
     sorted(group_first_dict.items(), key=lambda item: sum(item[1]), reverse=True))
-with open("score_first_model.txt", "w") as f:
+with open(score_dir + "score_first_model.txt", "w") as f:
     for k, v in group_first_dict.items():
         # 3 digits
         f.write("Group {}: {}\n".format(k, round(sum(v), 3)))
