@@ -8,9 +8,6 @@ monomer_path = "/data/data1/conglab/qcong/CASP16/monomers/"
 monomer_list = [txt for txt in os.listdir(
     monomer_path) if txt.endswith(".txt")]
 
-
-# file_list = ['T0237-D1.txt', 'T0240-D1.txt', 'T0240-D2.txt', 'T0241.txt']
-
 evaluation_unit = []
 whole_structure = []
 
@@ -30,27 +27,32 @@ for file_name in monomer_list:
 
 print("evaluation unit: ", evaluation_unit)
 print("whole structure: ", whole_structure)
-monomer_data_raw_path = "./monomer_data/raw/"
-monomer_data_EU_path = "./monomer_data/EU/"
-monomer_data_whole_path = "./monomer_data/whole/"
+monomer_data_raw_EU_path = "./monomer_data/raw_data/EU/"
+monomer_data_raw_whole_path = "./monomer_data/raw_data/whole/"
+monomer_data_raw_all_path = "./monomer_data/raw_data/all/"
+
+monomer_data_EU_path = "./monomer_data/processed/EU/"
+monomer_data_whole_path = "./monomer_data/processed/whole/"
+monomer_data_all_path = "./monomer_data/processed/all/"
 
 
-csv_path = "./csv/"
-csv_raw_path = "./csv_raw/"
-csv_tmp_path = "./csv_tmp/"
-
-if not os.path.exists(monomer_data_raw_path):
-    os.makedirs(monomer_data_raw_path)
-
+if not os.path.exists(monomer_data_raw_EU_path):
+    os.makedirs(monomer_data_raw_EU_path)
+if not os.path.exists(monomer_data_raw_whole_path):
+    os.makedirs(monomer_data_raw_whole_path)
+if not os.path.exists(monomer_data_raw_all_path):
+    os.makedirs(monomer_data_raw_all_path)
 if not os.path.exists(monomer_data_EU_path):
     os.makedirs(monomer_data_EU_path)
-
 if not os.path.exists(monomer_data_whole_path):
     os.makedirs(monomer_data_whole_path)
+if not os.path.exists(monomer_data_all_path):
+    os.makedirs(monomer_data_all_path)
 
-# sys.exit()
+csv_tmp_path = "./monomer_data/csv_tmp/"
+if not os.path.exists(csv_tmp_path):
+    os.makedirs(csv_tmp_path)
 
-all_data = {}
 # read the monomer list
 for monomer in monomer_list:
     monomer_file = monomer_path + monomer
@@ -60,7 +62,6 @@ for monomer in monomer_list:
             line = line.split()
             if len(line) > 1:
                 data.append(line)
-    all_data[monomer] = data
 
     # convert the data to dataframe, the first row is the column names, the first column is the index
     data = pd.DataFrame(data)
@@ -70,8 +71,13 @@ for monomer in monomer_list:
     data = data.drop(0)
     # set the "Model" column as the index
     data = data.set_index("Model")
+
     # save it as complete raw data, in case we need it later
-    data.to_csv(monomer_data_raw_path + monomer[:-4] + ".csv")
+    data.to_csv(monomer_data_raw_all_path + monomer[:-4] + ".csv")
+    if monomer in evaluation_unit:
+        data.to_csv(monomer_data_raw_EU_path + monomer[:-4] + ".csv")
+    if monomer in whole_structure:
+        data.to_csv(monomer_data_raw_whole_path + monomer[:-4] + ".csv")
 
     # remove the "GR#" column and "#" column
     data = data.drop(["GR#", "#"], axis=1)
@@ -112,7 +118,6 @@ for monomer in monomer_list:
 
     # if in one column, every value is the same, we set the column to 0
     for col in data.columns:
-        # Check if all values are the same, including NaN
         if data[col].nunique(dropna=False) == 1:
             data[col] = 0
 
@@ -148,6 +153,7 @@ for monomer in monomer_list:
     # print(data.head())
     # save the normalized data to csv file
     # data.to_csv(csv_path + monomer[:-4] + ".csv")
+    data.to_csv(monomer_data_all_path + monomer[:-4] + ".csv")
     if monomer in evaluation_unit:
         data.to_csv(monomer_data_EU_path + monomer[:-4] + ".csv")
     if monomer in whole_structure:
