@@ -49,7 +49,7 @@ if not os.path.exists(monomer_data_whole_path):
 if not os.path.exists(monomer_data_all_path):
     os.makedirs(monomer_data_all_path)
 
-csv_tmp_path = "./monomer_data/csv_tmp/"
+csv_tmp_path = "./csv_tmp/"
 if not os.path.exists(csv_tmp_path):
     os.makedirs(csv_tmp_path)
 
