@@ -114,8 +114,6 @@ for measure_of_interest in measures:
 
     # save the data
     # normalize the data with the z-score again
-    # transpose the data
-    data_whole_mean = data_whole_mean.T
     data_whole_mean = (data_whole_mean - data_whole_mean.mean()
                        ) / data_whole_mean.std()
     # fill nan with 0

@@ -11,12 +11,13 @@ from sympy import *
 from matplotlib import pyplot as plt
 from factor_analyzer import FactorAnalyzer, calculate_kmo, calculate_bartlett_sphericity
 
-csv_path = "./csv/"
-csv_list = [txt for txt in os.listdir(csv_path) if txt.endswith(".csv")]
+csv_path = "./by_target/"
+csv_file = "individual_score-GDT_TS-domain.csv"
+data = pd.read_csv(csv_path + csv_file, index_col=0)
 
-
-data = pd.read_csv("individual_score-GDT_TS.csv", index_col=0)
-
+png_dir = "./by_target_png/"
+if not os.path.exists(png_dir):
+    os.makedirs(png_dir)
 # print the first 5 rows
 print(data.head())
 print(data.shape)
@@ -29,7 +30,7 @@ plt.figure(figsize=(30, 30))
 ax = sns.heatmap(corr, cmap="BuPu", cbar=True)
 ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
 plt.title("Correlation Matrix", fontsize="xx-large")
-plt.savefig("Correlation_Matrix_transpose.png", dpi=300)
+plt.savefig(png_dir+"Correlation_Matrix_transpose.png", dpi=300)
 
 # run kmo test and bartlett test first
 # to see if the data is suitable for factor analysis
@@ -40,6 +41,7 @@ print("Chi square value: {}".format(chi_square_value))
 print("P value: {}".format(p_value))
 
 # this part is almost identical to principal component analysis
+print(data)
 Load_Matrix = FactorAnalyzer(
     rotation=None, n_factors=len(data.T), method='principal')
 Load_Matrix.fit(data)
@@ -72,7 +74,7 @@ plt.title('Eigenvalues vs number of factors',
 plt.xlabel('number of factors', fontdict={'weight': 'normal', 'size': 15})
 plt.ylabel('Eigenvalues', fontdict={'weight': 'normal', 'size': 15})
 plt.grid()
-plt.savefig('Eigenvalues_vs_number_of_factors_transpose.png', dpi=300)
+plt.savefig(png_dir+'Eigenvalues_vs_number_of_factors_transpose.png', dpi=300)
 
 
 Load_Matrix_rotated = FactorAnalyzer(
@@ -102,22 +104,20 @@ ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
 plt.title("Factor Analysis (abs)", fontsize="xx-large")
 plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
 # 保存图片
-plt.savefig("FA_abs_transpose.png")
+plt.savefig(png_dir+"FA_abs_transpose.png")
 plt.show()  # 显示图片
 
 
 df = pd.DataFrame(Load_Matrix, index=data.columns)
-plt.figure(figsize=(36, 27), dpi=300)
+plt.figure(figsize=(20, 40), dpi=300)
 cmap = sns.diverging_palette(240, 10, as_cmap=True)  # 240°是蓝色，10°是红色
 ax = sns.heatmap(df, annot=True, cmap=cmap, center=0, cbar=True)
-
-
 # ax = sns.heatmap(df, annot=True, cmap="BuPu", cbar=True)
 ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
 plt.title("Factor Analysis", fontsize="xx-large")
-plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
+plt.xlabel("factors", fontsize="xx-large")  # 设置y轴标签
 # 保存图片
-plt.savefig("FA_transpose.png")
+plt.savefig(png_dir+"FA_transpose.png")
 # plt.show()  # 显示图片
 
 sys.exit(0)
