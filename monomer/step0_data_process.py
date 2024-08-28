@@ -4,7 +4,8 @@ import pandas as pd
 import sys
 import time
 
-monomer_path = "/data/data1/conglab/qcong/CASP16/monomers/"
+# monomer_path = "/data/data1/conglab/qcong/CASP16/monomers/"
+monomer_path = "/home2/s439906/data/CASP16/monomers/"
 monomer_list = [txt for txt in os.listdir(
     monomer_path) if txt.endswith(".txt")]
 
@@ -27,13 +28,13 @@ for file_name in monomer_list:
 
 print("evaluation unit: ", evaluation_unit)
 print("whole structure: ", whole_structure)
-monomer_data_raw_EU_path = "./monomer_data/raw_data/EU/"
-monomer_data_raw_whole_path = "./monomer_data/raw_data/whole/"
-monomer_data_raw_all_path = "./monomer_data/raw_data/all/"
+monomer_data_raw_EU_path = "./monomer_data_aug_28/raw_data/EU/"
+monomer_data_raw_whole_path = "./monomer_data_aug_28/raw_data/whole/"
+monomer_data_raw_all_path = "./monomer_data_aug_28/raw_data/all/"
 
-monomer_data_EU_path = "./monomer_data/processed/EU/"
-monomer_data_whole_path = "./monomer_data/processed/whole/"
-monomer_data_all_path = "./monomer_data/processed/all/"
+monomer_data_EU_path = "./monomer_data_aug_28/processed/EU/"
+monomer_data_whole_path = "./monomer_data_aug_28/processed/whole/"
+monomer_data_all_path = "./monomer_data_aug_28/processed/all/"
 
 
 if not os.path.exists(monomer_data_raw_EU_path):
@@ -70,6 +71,9 @@ for monomer in monomer_list:
     # drop the first row
     data = data.drop(0)
     # set the "Model" column as the index
+    # if there is a header called MODEL, change it to Model
+    if "MODEL" in data.columns:
+        data = data.rename(columns={"MODEL": "Model"})
     data = data.set_index("Model")
 
     # save it as complete raw data, in case we need it later
