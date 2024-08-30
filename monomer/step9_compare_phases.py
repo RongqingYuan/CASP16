@@ -27,15 +27,16 @@ print("There are {} {} files".format(len(T1_files), first_phase))
 quantile_diffs = []
 
 top_n = 100
+quantile = 0.5
+measure = "GDT_TS"
+
+
 top_n_files = []
 top_n_diffs = []
-quantile = 0.5
-
 for T1_file in T1_files:
     T2_file = T1_file.replace(first_phase, second_phase)
     T1_data = pd.read_csv(processed_data_path + T1_file, index_col=0)
     T2_data = pd.read_csv(processed_data_path + T2_file, index_col=0)
-    measure = "GDT_TS"
     T1_measure = T1_data[measure]
     T2_measure = T2_data[measure]
 
@@ -113,11 +114,11 @@ plt.ylabel("{}% quantile {} - {}".format(
     quantile*100,  second_phase, first_phase), fontsize=12)
 # draw a line at 0
 plt.axhline(0, color='black', linestyle='-')
-plt.title("Difference for {}% quantile between {} and {}".format(
-    quantile*100, second_phase, first_phase), fontsize=14)
+plt.title("Difference for {}% quantile of {} between {} and {}".format(
+    quantile*100, measure, second_phase, first_phase), fontsize=14)
 plt.tight_layout()
 plt.savefig("./stages_png/" +
-            "{}_{}_{}_quantile_diffs.png".format(second_phase, first_phase, quantile*100), dpi=300)
+            "{}_{}_{}_quantile_diffs_{}.png".format(second_phase, first_phase, quantile*100, measure), dpi=300)
 
 # sort top_n_diffs with T1_files correspondingly
 top_n_diffs, top_n_files = zip(*sorted(zip(top_n_diffs, top_n_files)))
@@ -137,8 +138,8 @@ plt.ylabel("top_{} {} - {}".format(top_n,
                                    second_phase, first_phase), fontsize=12)
 # draw a line at 0
 plt.axhline(0, color='black', linestyle='-')
-plt.title("Difference for mean between {} and {} for top {}".format(
-    second_phase, first_phase, top_n), fontsize=14)
+plt.title("Difference for mean between {} of {} and {} for top {}".format(
+    second_phase, measure, first_phase, top_n), fontsize=14)
 plt.tight_layout()
-plt.savefig("./stages_png/"+"{}_{}_top_{}_mean_diffs.png".format(second_phase,
-            first_phase, top_n), dpi=300)
+plt.savefig("./stages_png/"+"{}_{}_top_{}_mean_diffs_{}.png".format(second_phase,
+            first_phase, top_n, measure), dpi=300)
