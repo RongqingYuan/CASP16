@@ -28,13 +28,13 @@ for file_name in monomer_list:
 
 print("evaluation unit: ", evaluation_unit)
 print("whole structure: ", whole_structure)
-monomer_data_raw_EU_path = "./monomer_data_aug_28/raw_data/EU/"
-monomer_data_raw_whole_path = "./monomer_data_aug_28/raw_data/whole/"
-monomer_data_raw_all_path = "./monomer_data_aug_28/raw_data/all/"
+monomer_data_raw_EU_path = "./monomer_data_aug_30/raw_data/EU/"
+monomer_data_raw_whole_path = "./monomer_data_aug_30/raw_data/whole/"
+monomer_data_raw_all_path = "./monomer_data_aug_30/raw_data/all/"
 
-monomer_data_EU_path = "./monomer_data_aug_28/processed/EU/"
-monomer_data_whole_path = "./monomer_data_aug_28/processed/whole/"
-monomer_data_all_path = "./monomer_data_aug_28/processed/all/"
+monomer_data_EU_path = "./monomer_data_aug_30/processed/EU/"
+monomer_data_whole_path = "./monomer_data_aug_30/processed/whole/"
+monomer_data_all_path = "./monomer_data_aug_30/processed/all/"
 
 
 if not os.path.exists(monomer_data_raw_EU_path):
@@ -109,16 +109,29 @@ for monomer in monomer_list:
     # take the negation of the columns
     data[inverse_columns] = -data[inverse_columns]
     # normalize the data with the z-score
-    data = (data - data.mean()) / data.std()
+
+    # data_tmp = (data - data.mean()) / data.std()
+    initial_z = (data - data.mean()) / data.std()
+
+    # remove z-score less than -2
+    filtered_data = data[((initial_z >= -2) | initial_z.isna()).all(axis=1)]
+    # filtered_data = data[initial_z >= -2]
+    filtered_data.to_csv(csv_tmp_path + monomer[:-4] + ".csv")
 
     # remove outliers: i.e. if any value is smaller than -2, we directly remove the whole row
     # data = data[(data > -2).all(axis=1)]
-    data = data[((data >= -2) | data.isna()).all(axis=1)]
-    # save to csv_tmp path to see if anything goes wrong
-    data.to_csv(csv_tmp_path + monomer[:-4] + ".csv")
+    # filtered_data = data_tmp[((data_tmp >= -2) | data_tmp.isna()).all(axis=1)]
+    # new_mean = filtered_data.mean(skipna=True)
+    # new_std = filtered_data.std(skipna=True)
+    new_mean = filtered_data.mean()
+    new_std = filtered_data.std()
+    print("new mean: ", new_mean)
+    print("new std: ", new_std)
+    # # save to csv_tmp path to see if anything goes wrong
+    # data.to_csv(csv_tmp_path + monomer[:-4] + ".csv")
 
     # after removing the outliers, we need to do z-score normalization again
-    data = (data - data.mean()) / data.std()
+    data = (data - new_mean) / new_std
 
     # if in one column, every value is the same, we set the column to 0
     for col in data.columns:
@@ -135,7 +148,9 @@ for monomer in monomer_list:
     # print(data.iloc[:, 0])
 
     # impute nan with 0.0
-    data = data.fillna(0.0)
+    data = data.fillna(-2.0)
+    # fill anything less than -2 with -2
+    data = data.where(data > -2, -2)
 
     # print(data.head())
     # time.sleep(5)
