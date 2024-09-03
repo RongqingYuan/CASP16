@@ -13,8 +13,8 @@ from factor_analyzer import FactorAnalyzer, calculate_kmo, calculate_bartlett_sp
 from copy import deepcopy, copy
 import time
 
-csv_path = "./monomer_data/raw_data/EU/"  # read raw csv files
-csv_path = "./monomer_data/raw_data/whole/"  # read raw csv files
+csv_raw_path = "./monomer_data_aug_30/raw/EU/"  # read raw csv files
+csv_path = "./monomer_data_aug_30/processed/EU/"  # read raw csv files
 if "whole" in csv_path:
     use_domain = False
 else:
@@ -44,31 +44,31 @@ for csv_file in csv_list:
     data_whole = pd.concat([data_whole, data_tmp], axis=0)
 
 
-# print the first 5 rows
-print(data_whole.head())
-print(data_whole.shape)
-# remove the "GR#" column and "#" column
-data_whole = data_whole.drop(["GR#", "#"], axis=1)
-# "DipDiff", "BBscore", "SCscore" does not contribute to the prediction, so we remove them as well
-data_whole = data_whole.drop(["DipDiff", "BBscore", "SCscore"], axis=1)
-# remove the "RANK" column
-data_whole = data_whole.drop(["RANK"], axis=1)
-# drop these 3 columns: NP_P, NP, err
-data_whole = data_whole.drop(["NP_P", "NP", "err"], axis=1)
+# # print the first 5 rows
+# print(data_whole.head())
+# print(data_whole.shape)
+# # remove the "GR#" column and "#" column
+# data_whole = data_whole.drop(["GR#", "#"], axis=1)
+# # "DipDiff", "BBscore", "SCscore" does not contribute to the prediction, so we remove them as well
+# data_whole = data_whole.drop(["DipDiff", "BBscore", "SCscore"], axis=1)
+# # remove the "RANK" column
+# data_whole = data_whole.drop(["RANK"], axis=1)
+# # drop these 3 columns: NP_P, NP, err
+# data_whole = data_whole.drop(["NP_P", "NP", "err"], axis=1)
 
-# fill the N/A values with nan
-# fill the "-" values with nan
-data_whole.replace("N/A", np.nan, inplace=True)
-data_whole.replace("-", np.nan, inplace=True)
-data_whole = data_whole.astype(float)
+# # fill the N/A values with nan
+# # fill the "-" values with nan
+# data_whole.replace("N/A", np.nan, inplace=True)
+# data_whole.replace("-", np.nan, inplace=True)
+# data_whole = data_whole.astype(float)
 
-# some columns need to be taken inverse because in this case,
-# smaller values are better, so we need to invert them for the sake of consistency
-# MP_ramfv is not in the list. fv stands for favored and it is not in the list
-inverse_columns = ["RMS_CA", "RMS_ALL", "RMSD[L]", "MolPrb_Score",
-                   "FlexE", "MP_clash", "MP_rotout", "MP_ramout"]  # also we don't need err, err is removed previously
-# take the negation of the columns
-data_whole[inverse_columns] = -data_whole[inverse_columns]
+# # some columns need to be taken inverse because in this case,
+# # smaller values are better, so we need to invert them for the sake of consistency
+# # MP_ramfv is not in the list. fv stands for favored and it is not in the list
+# inverse_columns = ["RMS_CA", "RMS_ALL", "RMSD[L]", "MolPrb_Score",
+#                    "FlexE", "MP_clash", "MP_rotout", "MP_ramout"]  # also we don't need err, err is removed previously
+# # take the negation of the columns
+# data_whole[inverse_columns] = -data_whole[inverse_columns]
 
 # measures is all the columns
 measures = data_whole.columns
@@ -114,14 +114,14 @@ for measure_of_interest in measures:
     else:
         end = "whole"
     data_whole_mean.to_csv(out_path +
-                           './individual_score_raw-{}-{}.csv'.format(measure_of_interest, end))
+                           './groups_by_targets_for-{}-{}.csv'.format(measure_of_interest, end))
 
-    # save the data
-    # normalize the data with the z-score again
-    data_whole_mean = (data_whole_mean - data_whole_mean.mean()
-                       ) / data_whole_mean.std()
-    # fill nan with 0
-    data_whole_mean.fillna(0, inplace=True)
+    # # save the data
+    # # normalize the data with the z-score again
+    # data_whole_mean = (data_whole_mean - data_whole_mean.mean()
+    #                    ) / data_whole_mean.std()
+    # # fill nan with 0
+    # data_whole_mean.fillna(0, inplace=True)
 
-    data_whole_mean.to_csv(out_path +
-                           './individual_score-{}-{}.csv'.format(measure_of_interest, end))
+    # data_whole_mean.to_csv(out_path +
+    #                        './individual_score_processed-{}-{}.csv'.format(measure_of_interest, end))
