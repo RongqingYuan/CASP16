@@ -12,7 +12,8 @@ from matplotlib import pyplot as plt
 from factor_analyzer import FactorAnalyzer, calculate_kmo, calculate_bartlett_sphericity
 
 csv_path = "./by_target/"
-csv_file = "individual_score-GDT_TS-domain.csv"
+csv_file = "individual_score-GDT_TS-whole.csv"
+csv_file = "individual_score-GDT_TS-EU.csv"
 data = pd.read_csv(csv_path + csv_file, index_col=0)
 
 png_dir = "./by_target_png/"
