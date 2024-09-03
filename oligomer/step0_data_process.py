@@ -9,13 +9,18 @@ oligomer_path = "/data/data1/conglab/qcong/CASP16/oligomers/"
 oligomer_list = [txt for txt in os.listdir(
     oligomer_path) if txt.endswith(".txt")]
 
-
+oligomer_out_raw_path = "./oligomer_data/raw_data/"
+oligomer_out_path = "./oligomer_data/processed/"
 csv_path = "./csv/"
 csv_raw_path = "./csv_raw/"
 if not os.path.exists(csv_path):
     os.makedirs(csv_path)
 if not os.path.exists(csv_raw_path):
     os.makedirs(csv_raw_path)
+if not os.path.exists(oligomer_out_path):
+    os.makedirs(oligomer_out_path)
+if not os.path.exists(oligomer_out_raw_path):
+    os.makedirs(oligomer_out_raw_path)
 all_data = {}
 
 # read the oligomer list
@@ -82,9 +87,6 @@ for oligomer in oligomer_list:
     # # print the first 5 rows
     # print(data.head())
 
-    # save the data to a csv file
-    data.to_csv(csv_raw_path + oligomer[:-4] + ".csv")
-
     # impute the N/A values with the mean value of the column
     # impute the - values with the mean value of the column
     # data = data.apply(pd.to_numeric)
@@ -92,32 +94,30 @@ for oligomer in oligomer_list:
     data.replace("-", np.nan, inplace=True)
     data = data.drop(["QS_Interfaces", "SymmGr.RMSD"], axis=1)
 
-    # # print only the first row
-    # print(data.head(1))
-    # # print only the first column
-    # print(data.iloc[:, 0])
-
     # convert the data type to float
     data = data.astype(float)
-    data = data.fillna(data.mean())
+    inverse_columns = ["SymmRMSD"]
+    data[inverse_columns] = -data[inverse_columns]
+    data = (data - data.mean()) / data.std()
+    data = data[((data >= -2) | data.isna()).all(axis=1)]
+    data = (data - data.mean()) / data.std()
+    data = data.fillna(0.0)
 
-    try:
-        data = data.astype(float)
-    except ValueError:
-        print("ValueError: ", oligomer)
-        sys.exit()
+    # try:
+    #     data = data.astype(float)
+    # except ValueError:
+    #     print("ValueError: ", oligomer)
+    #     sys.exit()
 
-    try:
-        data = (data - data.mean()) / data.std()
-    except ValueError:
-        print("ValueError: ", oligomer)
-        sys.exit()
+    # try:
+    #     data = (data - data.mean()) / data.std()
+    # except ValueError:
+    #     print("ValueError: ", oligomer)
+    #     sys.exit()
     # # normalize the data; the first column is the index so we don't normalize it
     # data.iloc[:, 1:] = (data.iloc[:, 1:] - data.iloc[:,
     #                     1:].mean()) / data.iloc[:, 1:].std()
     # print(data.head())
 
-    # normalize the data with the z-score
-    data = (data - data.mean()) / data.std()
     # save the normalized data to csv file
     data.to_csv(csv_path + oligomer[:-4] + ".csv")
