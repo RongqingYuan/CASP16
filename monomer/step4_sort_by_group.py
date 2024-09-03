@@ -13,7 +13,12 @@ from factor_analyzer import FactorAnalyzer, calculate_kmo, calculate_bartlett_sp
 from copy import deepcopy, copy
 import time
 
-csv_path = "./monomer_data/raw/"  # read raw csv files
+csv_path = "./monomer_data/raw_data/EU/"  # read raw csv files
+csv_path = "./monomer_data/raw_data/whole/"  # read raw csv files
+if "whole" in csv_path:
+    use_domain = False
+else:
+    use_domain = True
 csv_list = [txt for txt in os.listdir(csv_path) if txt.endswith(".csv")]
 
 out_path = "./by_target/"
@@ -75,7 +80,6 @@ print(measures)
 
 # get the column for the measure of interests and measure of interests 1
 # data_whole = data_whole[[measure_of_interest, measure_of_interest_1]]
-use_domain = True
 if use_domain:
     data_whole.index = data_whole.index.str.replace(
         r'(\w+)(TS\d+_\d+)-(\w+)', r'\1-\3\2')
@@ -106,7 +110,7 @@ for measure_of_interest in measures:
     print(data_whole_mean.shape)
 
     if use_domain:
-        end = "domain"
+        end = "EU"
     else:
         end = "whole"
     data_whole_mean.to_csv(out_path +
