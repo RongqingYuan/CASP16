@@ -55,6 +55,7 @@ if not os.path.exists(csv_tmp_path):
     os.makedirs(csv_tmp_path)
 
 # read the monomer list
+time_1 = time.time()
 for monomer in monomer_list:
     monomer_file = monomer_path + monomer
     data = []
@@ -113,6 +114,20 @@ for monomer in monomer_list:
     # data_tmp = (data - data.mean()) / data.std()
     initial_z = (data - data.mean()) / data.std()
 
+    # 创建一个新的 DataFrame 用于存储新的 z-score
+    new_z_score = pd.DataFrame(index=data.index, columns=data.columns)
+    # 遍历每一列进行处理
+    for column in data.columns:
+        # 筛选出 z-score 大于等于 -2 的元素，保留原始数据
+        filtered_data = data[column][initial_z[column] >= -2]
+
+        # 计算新的均值和方差，忽略 NaN 值
+        new_mean = filtered_data.mean(skipna=True)
+        new_std = filtered_data.std(skipna=True)
+
+        # 使用新的均值和方差重新计算 z-score
+        new_z_score[column] = (data[column] - new_mean) / new_std
+
     # remove z-score less than -2
     filtered_data = data[((initial_z >= -2) | initial_z.isna()).all(axis=1)]
     # filtered_data = data[initial_z >= -2]
@@ -125,8 +140,8 @@ for monomer in monomer_list:
     # new_std = filtered_data.std(skipna=True)
     new_mean = filtered_data.mean()
     new_std = filtered_data.std()
-    print("new mean: ", new_mean)
-    print("new std: ", new_std)
+    # print("new mean: ", new_mean)
+    # print("new std: ", new_std)
     # # save to csv_tmp path to see if anything goes wrong
     # data.to_csv(csv_tmp_path + monomer[:-4] + ".csv")
 
@@ -151,6 +166,9 @@ for monomer in monomer_list:
     data = data.fillna(-2.0)
     # fill anything less than -2 with -2
     data = data.where(data > -2, -2)
+
+    new_z_score = new_z_score.fillna(-2.0)
+    new_z_score = new_z_score.where(new_z_score > -2, -2)
 
     # print(data.head())
     # time.sleep(5)
@@ -177,6 +195,15 @@ for monomer in monomer_list:
         data.to_csv(monomer_data_EU_path + monomer[:-4] + ".csv")
     if monomer in whole_structure:
         data.to_csv(monomer_data_whole_path + monomer[:-4] + ".csv")
+
+    new_z_score.to_csv(monomer_data_all_path + monomer[:-4] + ".csv")
+    if monomer in evaluation_unit:
+        new_z_score.to_csv(monomer_data_EU_path + monomer[:-4] + ".csv")
+    if monomer in whole_structure:
+        new_z_score.to_csv(monomer_data_whole_path + monomer[:-4] + ".csv")
     # else:
     #     print("Error when saving the data: ", monomer)
     #     sys.exit()
+
+time_2 = time.time()
+print("Time used: ", time_2 - time_1)
