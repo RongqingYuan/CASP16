@@ -15,7 +15,7 @@ import time
 
 csv_raw_path = "./monomer_data_aug_30/raw/EU/"  # read raw csv files
 csv_path = "./monomer_data_aug_30/processed/EU/"  # read raw csv files
-csv_path = "./monomer_data_aug_30/raw/EU/"  # read raw csv files
+csv_path = "./monomer_data_aug_30/raw_data/EU/"  # read raw csv files
 if "whole" in csv_path:
     use_domain = False
 else:
@@ -114,9 +114,12 @@ for measure_of_interest in measures:
         end = "EU"
     else:
         end = "whole"
-    data_whole_mean.to_csv(out_path +
-                           './groups_by_targets_for-{}-{}.csv'.format(measure_of_interest, end))
-
+    if "raw" not in csv_path:
+        data_whole_mean.to_csv(out_path +
+                               './groups_by_targets_for-{}-{}.csv'.format(measure_of_interest, end))
+    else:
+        data_whole_mean.to_csv(out_path +
+                               './groups_by_targets_for-raw-{}-{}.csv'.format(measure_of_interest, end))
     # # save the data
     # # normalize the data with the z-score again
     # data_whole_mean = (data_whole_mean - data_whole_mean.mean()
