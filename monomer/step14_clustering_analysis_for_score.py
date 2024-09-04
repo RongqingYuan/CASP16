@@ -14,9 +14,13 @@ score_file = "groups_by_targets_for-raw-{}-EU.csv".format(measure)
 
 
 score_matrix = pd.read_csv(score_path + score_file, index_col=0)
-
-# run ward clustering
+score_matrix = score_matrix.T
 print(score_matrix.shape)
+# kick out columns that has more than 90% of nan
+score_matrix = score_matrix.loc[:, score_matrix.isnull().mean() < .9]
+print(score_matrix.shape)
+score_matrix = score_matrix.T
+# run ward clustering
 # # impute the missing values to -5, means they are doing terribly bad
 # score_matrix.fillna(0, inplace=True)
 
@@ -24,6 +28,9 @@ print(score_matrix.shape)
 # score_matrix.fillna(score_matrix.mean(), inplace=True)
 score_matrix.fillna(50, inplace=True)
 
+# keep columns that start with T1
+score_matrix = score_matrix.filter(regex='T1')
+print(score_matrix.shape)
 
 # 对行进行 Ward 聚类
 row_linkage = sch.linkage(score_matrix, method='ward')
