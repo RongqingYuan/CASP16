@@ -14,8 +14,8 @@ from copy import deepcopy, copy
 import time
 
 csv_raw_path = "./monomer_data_aug_30/raw/EU/"  # read raw csv files
-csv_path = "./monomer_data_aug_30/processed/EU/"  # read raw csv files
 csv_path = "./monomer_data_aug_30/raw_data/EU/"  # read raw csv files
+csv_path = "./monomer_data_aug_30/processed/EU/"  # read raw csv files
 if "whole" in csv_path:
     use_domain = False
 else:
@@ -89,6 +89,11 @@ data_whole['prefix'] = data_whole.index.str.split('_').str[0]
 data_whole['group'] = data_whole.index.str.split('_').str[1]
 print(data_whole)
 print(data_whole.shape)
+# get all group 6 rows
+data_whole_6 = data_whole[data_whole['group'] == '6']
+# drop all group 6 rows
+data_whole = data_whole[data_whole['group'] != '6']
+# breakpoint()
 data_whole_grouped = data_whole.groupby('prefix').max()
 print(data_whole_grouped.shape)
 print(data_whole_grouped.head())
