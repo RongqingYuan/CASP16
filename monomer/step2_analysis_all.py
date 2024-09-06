@@ -7,10 +7,10 @@ import numpy as np
 from factor_analyzer import FactorAnalyzer
 import factor_analyzer
 from sklearn.preprocessing import MinMaxScaler
-from sympy import *
 from matplotlib import pyplot as plt
 from factor_analyzer import FactorAnalyzer, calculate_kmo, calculate_bartlett_sphericity
 import scipy.stats as stats
+# from sympy import *
 
 csv_path = "./monomer_data/processed/whole/"
 csv_path = "./monomer_data/processed/EU/"
@@ -21,65 +21,52 @@ png_dir = "./new_png/"
 score_dir = "./new_score/"
 if not os.path.exists(png_dir):
     os.makedirs(png_dir)
-
 if not os.path.exists(score_dir):
     os.makedirs(score_dir)
-
 csv_list = [txt for txt in os.listdir(csv_path) if txt.endswith(".csv")]
 csv_list = [txt for txt in os.listdir(
     csv_path) if txt.endswith(".csv") and txt.startswith("T1")]
 
-# breakpoint()
-# csv_file = csv_path + csv_list[3]
-# print("Processing {}".format(csv_file))
-# data = pd.read_csv(csv_file, index_col=0)
-
 # read all data and concatenate them into one big dataframe
 data = pd.DataFrame()
 for csv_file in csv_list:
-    print("Processing {}".format(csv_file))
     data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
-    print(data_tmp.shape)
-    if data_tmp.shape[1] == 35:
-        print("something wrong with {}".format(csv_file))
-        sys.exit(0)
+    print("Processing {}".format(csv_file), data_tmp.shape)
     data = pd.concat([data, data_tmp], axis=0)
-# print the first 5 rows
 print(data.head())
 print(data.shape)
-# sys.exit(0)
 
-NP_P_remove = False
-NP_remove = False
-FlexE_remove = False
-# NP_P column has issues. if it is all NaN, we will drop it
-if data["NP_P"].isnull().all():
-    data = data.drop("NP_P", axis=1)
-    print("NP_P column is all NaN for {}, so we drop it".format(csv_file))
-    NP_P_remove = True
-# NP column has issues. if it is all NaN, we will drop it
-if data["NP"].isnull().all():
-    data = data.drop("NP", axis=1)
-    print("NP column is all NaN for {}, so we drop it".format(csv_file))
-    NP_remove = True
-# FlexE column has issues. if it is all NaN, we will drop it
-if data["FlexE"].isnull().all():
-    data = data.drop("FlexE", axis=1)
-    print("FlexE column is all NaN for {}, so we drop it".format(csv_file))
-    FlexE_remove = True
+# NP_P_remove = False
+# NP_remove = False
+# FlexE_remove = False
+# # NP_P column has issues. if it is all NaN, we will drop it
+# if data["NP_P"].isnull().all():
+#     data = data.drop("NP_P", axis=1)
+#     print("NP_P column is all NaN for {}, so we drop it".format(csv_file))
+#     NP_P_remove = True
+# # NP column has issues. if it is all NaN, we will drop it
+# if data["NP"].isnull().all():
+#     data = data.drop("NP", axis=1)
+#     print("NP column is all NaN for {}, so we drop it".format(csv_file))
+#     NP_remove = True
+# # FlexE column has issues. if it is all NaN, we will drop it
+# if data["FlexE"].isnull().all():
+#     data = data.drop("FlexE", axis=1)
+#     print("FlexE column is all NaN for {}, so we drop it".format(csv_file))
+#     FlexE_remove = True
 
-# if every value in NP_P is the same, we will drop it
-if not NP_P_remove and data["NP_P"].nunique() == 1:
-    data = data.drop("NP_P", axis=1)
-    print("NP_P column has only one unique value for {}, so we drop it".format(csv_file))
-# if every value in NP is the same, we will drop it
-if not NP_remove and data["NP"].nunique() == 1:
-    data = data.drop("NP", axis=1)
-    print("NP column has only one unique value for {}, so we drop it".format(csv_file))
-# if every value in FlexE is the same, we will drop it
-if not FlexE_remove and data["FlexE"].nunique() == 1:
-    data = data.drop("FlexE", axis=1)
-    print("FlexE column has only one unique value for {}, so we drop it".format(csv_file))
+# # if every value in NP_P is the same, we will drop it
+# if not NP_P_remove and data["NP_P"].nunique() == 1:
+#     data = data.drop("NP_P", axis=1)
+#     print("NP_P column has only one unique value for {}, so we drop it".format(csv_file))
+# # if every value in NP is the same, we will drop it
+# if not NP_remove and data["NP"].nunique() == 1:
+#     data = data.drop("NP", axis=1)
+#     print("NP column has only one unique value for {}, so we drop it".format(csv_file))
+# # if every value in FlexE is the same, we will drop it
+# if not FlexE_remove and data["FlexE"].nunique() == 1:
+#     data = data.drop("FlexE", axis=1)
+#     print("FlexE column has only one unique value for {}, so we drop it".format(csv_file))
 
 
 # drop these 3 columns: NP_P, NP, err
@@ -88,13 +75,16 @@ data = data.drop(["NP_P", "NP", "err"], axis=1)
 # drop these two columns:Z-M1-GDT Z-MA-GDT
 data = data.drop(["Z-M1-GDT", "Z-MA-GDT"], axis=1)
 # save the data to csv file
-data.to_csv("./monomer_data_aug_28/all/fa_processed_all.csv")
+data.to_csv("./monomer_data_aug_30/all/fa_processed_all.csv")
 
 # get the mean and std of the data
 print("Mean of the data")
 print(data.mean())
 print("Std of the data")
 print(data.std())
+
+# not sure if this is needed
+# but essentially it is not that important, and experimentally it is not needed
 # z-score normalization
 data = (data - data.mean()) / data.std()
 print("Mean of the data")
@@ -102,9 +92,9 @@ print(data.mean())
 print("Std of the data")
 print(data.std())
 # z-score normalization
-# breakpoint()
 print(data.head())
 
+# breakpoint()
 
 # run kmo test and bartlett test first
 # to see if the data is suitable for factor analysis
@@ -179,27 +169,24 @@ ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
 plt.title("Factor Analysis (abs)", fontsize="xx-large")
 plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
 # 保存图片
-plt.savefig(png_dir+"FA_abs.png")
-plt.show()  # 显示图片
+plt.savefig(png_dir + "FA_abs.png")
 
 
 df = pd.DataFrame(Load_Matrix, index=data.columns)
-plt.figure(figsize=(12, 9), dpi=300)
+plt.figure(figsize=(8, 6), dpi=300)
 cmap = sns.diverging_palette(240, 10, as_cmap=True)  # 240°是蓝色，10°是红色
 ax = sns.heatmap(df, annot=True, cmap=cmap, center=0, cbar=True)
-
-
 # ax = sns.heatmap(df, annot=True, cmap="BuPu", cbar=True)
 ax.yaxis.set_tick_params(labelsize=10)  # 设置y轴字体大小
 plt.title("Factor Analysis", fontsize="xx-large")
-# plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
-plt.xlabel("factors", fontsize="xx-large")  # 设置x轴标签
+plt.xlabel("factors", fontsize=12)  # 设置x轴标签
+# plt.xlabel("factors", fontsize="xx-large")  # 设置x轴标签
 # set the x-axis to be factor1, factor2, ...
 ax.set_xticklabels(["factor" + str(i + 1) for i in range(N)], fontsize=10)
-# 保存图片
 plt.savefig(png_dir + "FA_{}.png".format(N))
-# plt.show()  # 显示图片
 # sys.exit(0)
+
+
 # 计算因子得分（回归方法）（系数矩阵的逆乘以因子载荷矩阵）
 f_corr = data.corr()  # 皮尔逊相关系数
 X1 = np.mat(f_corr)
@@ -263,8 +250,10 @@ print(grouped["high_resolution_score"].max())
 print(type(grouped["high_resolution_score"].max()))
 print(pd.DataFrame(grouped["high_resolution_score"].max()))
 
-
-grouped = pd.DataFrame(grouped["low_resolution_score"].max())
+measure_of_interest = "high_resolution_score"
+measure_of_interest = "low_resolution_score"
+measure_of_interest = "chemical_score"
+grouped = pd.DataFrame(grouped[measure_of_interest].max())
 grouped.to_csv("./tmp/" + "grouped.csv")
 # grouped = pd.DataFrame(grouped["low_resolution_score"].max())
 # grouped = pd.DataFrame(grouped["chemical_score"].max())
@@ -286,11 +275,7 @@ print(grouped_by_target)
 for k, v in grouped_by_target.iterrows():
     print(k, v)
 
-# breakpoint()
 print(score_df.index)
-measure_of_interest = "chemical_score"
-measure_of_interest = "low_resolution_score"
-measure_of_interest = "high_resolution_score"
 score_df = pd.DataFrame(score_df[measure_of_interest])
 score_df.to_csv("./tmp/" + "score_df_2.csv")
 data_whole = score_df.stack().unstack('group')
@@ -305,15 +290,9 @@ data_whole = data_whole[data_whole['submission_id'] != '6']
 data_whole_by_target = data_whole.groupby('target').max()
 data_whole_by_target.to_csv("./tmp/" + "data_whole_by_target.csv")
 
-wanted_group = ["052", "022", "456", "051",
-                "319", "287", "208", "028", "019", "294", "465", "110", "345", "139"]
-wanted_group = ["TS"+group for group in wanted_group]
-
-points = {}
-
 wanted_group = [
     group for group in data_whole_by_target.columns if group.startswith("TS")]
-
+points = {}
 for group_1 in wanted_group:
     for group_2 in wanted_group:
         if group_1 == group_2:
@@ -343,9 +322,6 @@ print(grouped_by_target)
 # drop the seconde level of the index
 grouped_by_target = grouped_by_target.droplevel(1)
 print(grouped_by_target)
-
-# for k, v in grouped_by_target.iterrows():
-#     print(k, v)
 
 # convert the sum column to a dictionary
 sum_dict = grouped_by_target["sum"].to_dict()
