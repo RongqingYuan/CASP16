@@ -10,8 +10,12 @@ from sklearn.preprocessing import MinMaxScaler
 from sympy import *
 from matplotlib import pyplot as plt
 from factor_analyzer import FactorAnalyzer, calculate_kmo, calculate_bartlett_sphericity
+import scipy.stats as stats
 
-csv_path = "./monomer_data/whole/"
+csv_path = "./monomer_data/processed/whole/"
+csv_path = "./monomer_data/processed/EU/"
+csv_path = "./monomer_data_aug_28/processed/whole/"
+csv_path = "./monomer_data_aug_30/processed/EU/"
 # csv_path = "./monomer_data/EU/"
 png_dir = "./new_png/"
 score_dir = "./new_score/"
@@ -22,7 +26,10 @@ if not os.path.exists(score_dir):
     os.makedirs(score_dir)
 
 csv_list = [txt for txt in os.listdir(csv_path) if txt.endswith(".csv")]
+csv_list = [txt for txt in os.listdir(
+    csv_path) if txt.endswith(".csv") and txt.startswith("T1")]
 
+# breakpoint()
 # csv_file = csv_path + csv_list[3]
 # print("Processing {}".format(csv_file))
 # data = pd.read_csv(csv_file, index_col=0)
@@ -78,7 +85,26 @@ if not FlexE_remove and data["FlexE"].nunique() == 1:
 # drop these 3 columns: NP_P, NP, err
 data = data.drop(["NP_P", "NP", "err"], axis=1)
 
+# drop these two columns:Z-M1-GDT Z-MA-GDT
+data = data.drop(["Z-M1-GDT", "Z-MA-GDT"], axis=1)
+# save the data to csv file
+data.to_csv("./monomer_data_aug_28/all/fa_processed_all.csv")
+
+# get the mean and std of the data
+print("Mean of the data")
+print(data.mean())
+print("Std of the data")
+print(data.std())
+# z-score normalization
+data = (data - data.mean()) / data.std()
+print("Mean of the data")
+print(data.mean())
+print("Std of the data")
+print(data.std())
+# z-score normalization
+# breakpoint()
 print(data.head())
+
 
 # run kmo test and bartlett test first
 # to see if the data is suitable for factor analysis
@@ -108,7 +134,7 @@ for c in matrices_var["eigenvalue before rotation"]:
         s = matrices_var["cumulative variance contributed before rotation"][N-1]
         print("Use {} factors, cumulative variance contributed is {}".format(N, s))
         break
-N = 4
+N = 3
 # it is used to see how many factors are appropriate, generally it is taken to the left and right of the smooth place, of course, it is also necessary to combine the contribution rate
 # matplotlib.rcParams["font.family"] = "SimHei"
 ev, v = Load_Matrix.get_eigenvalues()
@@ -124,6 +150,8 @@ plt.grid()
 plt.savefig(png_dir+'Eigenvalues_vs_number_of_factors.png', dpi=300)
 
 
+# Load_Matrix_rotated = FactorAnalyzer(
+#     rotation='varimax', n_factors=N, method='principal')
 Load_Matrix_rotated = FactorAnalyzer(
     rotation='varimax', n_factors=N, method='principal')
 # Load_Matrix_rotated = FactorAnalyzer(
@@ -162,12 +190,15 @@ ax = sns.heatmap(df, annot=True, cmap=cmap, center=0, cbar=True)
 
 
 # ax = sns.heatmap(df, annot=True, cmap="BuPu", cbar=True)
-ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
+ax.yaxis.set_tick_params(labelsize=10)  # 设置y轴字体大小
 plt.title("Factor Analysis", fontsize="xx-large")
-plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
+# plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
+plt.xlabel("factors", fontsize="xx-large")  # 设置x轴标签
+# set the x-axis to be factor1, factor2, ...
+ax.set_xticklabels(["factor" + str(i + 1) for i in range(N)], fontsize=10)
 # 保存图片
-plt.savefig(png_dir + "FA.png")
-plt.show()  # 显示图片
+plt.savefig(png_dir + "FA_{}.png".format(N))
+# plt.show()  # 显示图片
 # sys.exit(0)
 # 计算因子得分（回归方法）（系数矩阵的逆乘以因子载荷矩阵）
 f_corr = data.corr()  # 皮尔逊相关系数
@@ -186,7 +217,6 @@ print("Factor score:\n", factor_score_weight)
 print(Load_Matrix_rotated.get_communalities())
 print(Load_Matrix_rotated.transform(data))
 # print every row of the factor score
-
 shape = Load_Matrix_rotated.transform(data).shape
 
 print(Load_Matrix_rotated.get_factor_variance())
@@ -194,10 +224,152 @@ variance, proportional_variance, cumulative_variance = Load_Matrix_rotated.get_f
 
 
 print(np.dot(Load_Matrix_rotated.transform(data), proportional_variance))
+raw_score = Load_Matrix_rotated.transform(data)
 score = np.dot(Load_Matrix_rotated.transform(data), proportional_variance)
+# save the score to csv file
 print(np.dot(Load_Matrix_rotated.transform(data), proportional_variance).shape)
 # get the row labels
 print(data.index)
+print(raw_score.shape)
+print(proportional_variance)
+print(raw_score.T[0].shape)
+print(data.index.shape)
+high_resolution_score = raw_score.T[0]
+chemical_score = raw_score.T[1]
+low_resolution_score = raw_score.T[2]
+# get a new dataframe using data.index as the index, high_resolution_score, chemical_score, low_resolution_score as the columns
+score_df = pd.DataFrame(
+    {"high_resolution_score": high_resolution_score, "chemical_score": chemical_score, "low_resolution_score": low_resolution_score}, index=data.index)
+score_df.to_csv("./tmp/" + "score_df_0.csv")
+
+# score_df.index = score_df.index.str.extract(
+#     r'(?P<Level1>.+TS)(?P<Level2>\d+)_(?P<Level3>\d+)')
+# score_df.index = score_df.index.str.extract(r'(T\d+)(TS)(\d+)(?:_(\d+))?(?:-(D\d+))?') # does not work
+
+score_df.index = score_df.index.str.extract(
+    r'(T\w+)TS(\w+)_(\w+)-(D\w+)').apply(lambda x: (f"{x[0]}-{x[3]}", f"TS{x[1]}", x[2]), axis=1)
+
+print(score_df.shape)
+print(score_df.head())
+score_df.to_csv("./tmp/" + "score_df_1.csv")
+score_df.index = pd.MultiIndex.from_tuples(
+    score_df.index, names=['target', 'group', 'submission_id'])
+# grouped = score_df.groupby(["target", "group"])
+grouped = score_df.groupby(["group", "target"])
+print(grouped.head())
+print(grouped.head())
+print(type(grouped))
+print(grouped["high_resolution_score"].max())
+print(type(grouped["high_resolution_score"].max()))
+print(pd.DataFrame(grouped["high_resolution_score"].max()))
+
+
+grouped = pd.DataFrame(grouped["low_resolution_score"].max())
+grouped.to_csv("./tmp/" + "grouped.csv")
+# grouped = pd.DataFrame(grouped["low_resolution_score"].max())
+# grouped = pd.DataFrame(grouped["chemical_score"].max())
+# sum the scores for each group
+# grouped["group"] = grouped.index.get_level_values("group")
+grouped_by_target = grouped.stack().unstack('target')
+sum_grouped_by_target = grouped_by_target.sum(axis=1)
+grouped_by_target["sum"] = sum_grouped_by_target
+grouped_by_target = grouped_by_target.sort_values(by="sum", ascending=False)
+grouped_by_target.to_csv("./tmp/" + "grouped_reset.csv")
+print(grouped_by_target.head())
+# breakpoint()
+print(grouped_by_target.head())
+# sort grouped by value
+# grouped_by_target = grouped_by_target.sort_values(by="low_resolution_score", ascending=False)
+# grouped = grouped.sort_values(by="low_resolution_score", ascending=False)
+# grouped = grouped.sort_values(by="chemical_score", ascending=False)
+print(grouped_by_target)
+for k, v in grouped_by_target.iterrows():
+    print(k, v)
+
+# breakpoint()
+print(score_df.index)
+measure_of_interest = "chemical_score"
+measure_of_interest = "low_resolution_score"
+measure_of_interest = "high_resolution_score"
+score_df = pd.DataFrame(score_df[measure_of_interest])
+score_df.to_csv("./tmp/" + "score_df_2.csv")
+data_whole = score_df.stack().unstack('group')
+data_whole.index = [f'{target}_{submission_id}' for target,
+                    submission_id, measure in data_whole.index]
+print(data_whole.head())
+# get a new column called submission_id and target
+data_whole['target'] = data_whole.index.str.split('_').str[0]
+data_whole['submission_id'] = data_whole.index.str.split('_').str[1]
+# remove any submission_id = 6
+data_whole = data_whole[data_whole['submission_id'] != '6']
+data_whole_by_target = data_whole.groupby('target').max()
+data_whole_by_target.to_csv("./tmp/" + "data_whole_by_target.csv")
+
+wanted_group = ["052", "022", "456", "051",
+                "319", "287", "208", "028", "019", "294", "465", "110", "345", "139"]
+wanted_group = ["TS"+group for group in wanted_group]
+
+points = {}
+
+wanted_group = [
+    group for group in data_whole_by_target.columns if group.startswith("TS")]
+
+for group_1 in wanted_group:
+    for group_2 in wanted_group:
+        if group_1 == group_2:
+            continue
+        data_1 = data_whole_by_target[group_1]
+        data_1 = pd.DataFrame(data_1)
+        # fill missing values with 0
+        data_1.fillna(0, inplace=True)
+        data_2 = data_whole_by_target[group_2]
+        data_2 = pd.DataFrame(data_2)
+        # fill missing values with 0
+        data_2.fillna(0, inplace=True)
+        try:
+            t_stat, p_val = stats.ttest_rel(data_1, data_2)
+        except:
+            breakpoint()
+        print(
+            f"Group {group_1} vs Group {group_2}: t_stat={t_stat}, p_val={p_val}")
+        if group_1 not in points:
+            points[group_1] = 0
+        if t_stat > 0 and p_val/2 < 0.05:
+            points[group_1] += 1
+points = dict(sorted(points.items(), key=lambda item: item[1], reverse=True))
+print(points)
+
+print(grouped_by_target)
+# drop the seconde level of the index
+grouped_by_target = grouped_by_target.droplevel(1)
+print(grouped_by_target)
+
+# for k, v in grouped_by_target.iterrows():
+#     print(k, v)
+
+# convert the sum column to a dictionary
+sum_dict = grouped_by_target["sum"].to_dict()
+print(sum_dict)
+
+sys.exit(0)
+
+
+def fill_missing(group):
+    # 计算组内每列的均值（不包括 target 和 submission_id 列）
+    means = group.drop(columns=['submission_id']).mean()
+
+    # 用均值填补缺失值
+    filled_group = group.fillna(means)
+
+    # 如果整组数据都是缺失值，则用0填补
+    filled_group = filled_group.fillna(0)
+
+    return filled_group
+
+
+data_whole_by_target = data_whole_by_target.apply(
+    fill_missing).reset_index(drop=True)
+sys.exit(0)
 
 score_dict = {}
 for i in range(shape[0]):
