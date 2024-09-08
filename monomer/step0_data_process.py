@@ -6,6 +6,7 @@ import time
 
 # monomer_path = "/data/data1/conglab/qcong/CASP16/monomers/"
 monomer_path = "/home2/s439906/data/CASP16/monomers/"
+monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_8/"
 monomer_list = [txt for txt in os.listdir(
     monomer_path) if txt.endswith(".txt")]
 
