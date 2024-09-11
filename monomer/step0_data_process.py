@@ -7,8 +7,35 @@ import time
 # monomer_path = "/data/data1/conglab/qcong/CASP16/monomers/"
 monomer_path = "/home2/s439906/data/CASP16/monomers/"
 monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_8/"
+monomer_path = "/home2/s439906/data/CASP16/monomer_Sep_10/"
+
 monomer_list = [txt for txt in os.listdir(
     monomer_path) if txt.endswith(".txt")]
+# monomer_data_raw_EU_path = "./monomer_data_aug_30/raw_data/EU/"
+# monomer_data_raw_whole_path = "./monomer_data_aug_30/raw_data/whole/"
+# monomer_data_raw_all_path = "./monomer_data_aug_30/raw_data/all/"
+
+# monomer_data_EU_path = "./monomer_data_aug_30/processed/EU/"
+# monomer_data_whole_path = "./monomer_data_aug_30/processed/whole/"
+# monomer_data_all_path = "./monomer_data_aug_30/processed/all/"
+
+# monomer_data_raw_EU_path = "./monomer_data_sep_8/raw_data/EU/"
+# monomer_data_raw_whole_path = "./monomer_data_sep_8/raw_data/whole/"
+# monomer_data_raw_all_path = "./monomer_data_sep_8/raw_data/all/"
+
+# monomer_data_EU_path = "./monomer_data_sep_8/processed/EU/"
+# monomer_data_whole_path = "./monomer_data_sep_8/processed/whole/"
+# monomer_data_all_path = "./monomer_data_sep_8/processed/all/"
+
+
+monomer_data_raw_EU_path = "./monomer_data_Sep_10/raw_data/EU/"
+monomer_data_raw_whole_path = "./monomer_data_Sep_10/raw_data/whole/"
+monomer_data_raw_all_path = "./monomer_data_Sep_10/raw_data/all/"
+
+monomer_data_EU_path = "./monomer_data_Sep_10/processed/EU/"
+monomer_data_whole_path = "./monomer_data_Sep_10/processed/whole/"
+monomer_data_all_path = "./monomer_data_Sep_10/processed/all/"
+
 
 evaluation_unit = []
 whole_structure = []
@@ -29,13 +56,6 @@ for file_name in monomer_list:
 
 print("evaluation unit: ", evaluation_unit)
 print("whole structure: ", whole_structure)
-monomer_data_raw_EU_path = "./monomer_data_aug_30/raw_data/EU/"
-monomer_data_raw_whole_path = "./monomer_data_aug_30/raw_data/whole/"
-monomer_data_raw_all_path = "./monomer_data_aug_30/raw_data/all/"
-
-monomer_data_EU_path = "./monomer_data_aug_30/processed/EU/"
-monomer_data_whole_path = "./monomer_data_aug_30/processed/whole/"
-monomer_data_all_path = "./monomer_data_aug_30/processed/all/"
 
 
 if not os.path.exists(monomer_data_raw_EU_path):
