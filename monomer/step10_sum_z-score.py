@@ -1,63 +1,204 @@
 import pandas as pd
 import numpy as np
 import sys
-# read ./monomer_data_aug_28/all/fa_processed_all.csv
+import os
 
 
-data = pd.read_csv(
-    "./monomer_data_aug_28/all/fa_processed_all.csv", index_col=0)
-print(data.head())
+hard_group = [
+    "T1207-D1",
+    "T1210-D1",
+    "T1210-D2",
+    "T1220s1-D1",
+    "T1220s1-D2",
+    "T1226-D1",
+    "T1228v1-D3",
+    "T1228v1-D4",
+    "T1228v2-D3",
+    "T1228v2-D4",
+    "T1239v1-D4",
+    "T1239v2-D4",
+    "T1271s1-D1",
+    "T1271s3-D1",
+    "T1271s8-D1",
+]
 
-data.index = data.index.str.extract(
-    r'(T\w+)TS(\w+)_(\w+)-(D\w+)').apply(lambda x: (f"{x[0]}-{x[3]}", f"TS{x[1]}", x[2]), axis=1)
+medium_group = [
+    "T1210-D3",
+    "T1212-D1",
+    "T1218-D1",
+    "T1218-D2",
+    "T1227s1-D1",
+    "T1228v1-D1",
+    "T1228v2-D1",
+    "T1230s1-D1",
+    "T1237-D1",
+    "T1239v1-D1",
+    "T1239v1-D3",
+    "T1239v2-D1",
+    "T1239v2-D3",
+    "T1243-D1",
+    "T1244s1-D1",
+    "T1244s2-D1",
+    "T1245s2-D1",
+    "T1249v1-D1",
+    "T1257-D3",
+    "T1266-D1",
+    "T1270-D1",
+    "T1270-D2",
+    "T1267s1-D1",
+    "T1267s1-D2",
+    "T1267s2-D1",
+    "T1269-D1",
+    "T1269-D2",
+    "T1269-D3",
+    "T1271s2-D1",
+    "T1271s4-D1",
+    "T1271s5-D1",
+    "T1271s5-D2",
+    "T1271s7-D1",
+    "T1271s8-D2",
+    "T1272s2-D1",
+    "T1272s6-D1",
+    "T1272s8-D1",
+    "T1272s9-D1",
+    "T1279-D2",
+    "T1284-D1",
+    "T1295-D1",
+    "T1295-D3",
+    "T1298-D1",
+    "T1298-D2",
+]
 
-print(data.shape)
-print(data.head())
-data.index = pd.MultiIndex.from_tuples(
-    data.index, names=['target', 'group', 'submission_id'])
-# grouped = score_df.groupby(["target", "group"])
-grouped = data.groupby(["group", "target"])
-print(grouped.head())
-print(type(grouped))
+easy_group = [
+    "T1201-D1",
+    "T1201-D2",
+    "T1206-D1",
+    "T1208s1-D1",
+    "T1208s2-D1",
+    "T1218-D3",
+    "T1228v1-D2",
+    "T1228v2-D2",
+    "T1231-D1",
+    "T1234-D1",
+    "T1235-D1",
+    "T1239v1-D2",
+    "T1239v2-D2",
+    "T1240-D1",
+    "T1240-D2",
+    "T1245s1-D1",
+    "T1246-D1",
+    "T1257-D1",
+    "T1257-D2",
+    "T1259-D1",
+    "T1271s6-D1",
+    "T1274-D1",
+    "T1276-D1",
+    "T1278-D1",
+    "T1279-D1",
+    "T1280-D1",
+    "T1292-D1",
+    "T1294v1-D1",
+    "T1294v2-D1",
+    "T1295-D2",
+    # "T1214",
+]
 
+
+csv_path = "./monomer_data_aug_30/processed/EU/"
+csv_path = "./monomer_data_Sep_10/processed/EU/"
+csv_path = "./monomer_data_Sep_10/raw_data/EU/"
+csv_list = [txt for txt in os.listdir(
+    csv_path) if txt.endswith(".csv") and txt.startswith("T1")]
+
+model = "first"
+model = "best"
+
+mode = "easy"
+mode = "medium"
+mode = "hard"
+mode = "all"
+
+if mode == "hard":
+    csv_list = [csv for csv in csv_list if csv.split(
+        ".")[0] in hard_group]
+
+elif mode == "medium":
+    csv_list = [csv for csv in csv_list if csv.split(
+        ".")[0] in medium_group]
+
+elif mode == "easy":
+    csv_list = [csv for csv in csv_list if csv.split(
+        ".")[0] in easy_group]
+
+elif mode == "all":
+    pass
+
+
+# print(csv_list.__len__())
+# breakpoint()
+# read all data and concatenate them into one big dataframe
 feature = "GDT_TS"
-grouped = pd.DataFrame(grouped[feature].max())
-print(grouped.head())
-# grouped = pd.DataFrame(grouped["low_resolution_score"].max())
-# grouped = pd.DataFrame(grouped["chemical_score"].max())
-# sum the scores for each group
-grouped = grouped.groupby("group").sum()
-print(grouped)
-# sort grouped by value
-grouped = grouped.sort_values(by=feature, ascending=False)
-# grouped = grouped.sort_values(by="low_resolution_score", ascending=False)
-# grouped = grouped.sort_values(by="chemical_score", ascending=False)
-print(grouped)
-for k, v in grouped.iterrows():
-    print(k, v)
-sys.exit()
+features = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
+            'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
+            #   'SphGr',
+            'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
+            'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
 
 
-print(data.index)
-measure_of_interest = "low_resolution_score"
-measure_of_interest = "chemical_score"
-measure_of_interest = "high_resolution_score"
-score_df = pd.DataFrame(data[measure_of_interest])
-score_df.to_csv("./tmp/" + "score_df_2.csv")
-data_whole = score_df.stack().unstack('group')
-data_whole.index = [f'{target}_{submission_id}' for target,
-                    submission_id, measure in data_whole.index]
-print(data_whole.head())
-# get a new column called submission_id and target
-data_whole['target'] = data_whole.index.str.split('_').str[0]
-data_whole['submission_id'] = data_whole.index.str.split('_').str[1]
-# remove any submission_id = 6
-data_whole = data_whole[data_whole['submission_id'] != '6']
-data_whole_by_target = data_whole.groupby('target').max()
-data_whole_by_target.to_csv("./tmp/" + "data_whole_by_target.csv")
+def get_group_by_target(csv_list, csv_path, feature, model, mode):
+    data = pd.DataFrame()
+    for csv_file in csv_list:
+        print("Processing {}".format(csv_file))
+        data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
+        data_tmp = pd.DataFrame(data_tmp[feature])
+        print(data_tmp.shape)
+        data_tmp.index = data_tmp.index.str.extract(
+            r'(T\w+)TS(\w+)_(\w+)-(D\w+)').apply(lambda x: (f"{x[0]}-{x[3]}", f"TS{x[1]}", x[2]), axis=1)
+        data_tmp.index = pd.MultiIndex.from_tuples(
+            data_tmp.index, names=['target', 'group', 'submission_id'])
+        # # get all data with submission_id == 6
+        # data_tmp = data_tmp.loc[(slice(None), slice(None), "6"), :]
+        # drop all data with submission_id == 6
+        if model == "best":
+            data_tmp = data_tmp.loc[(slice(None), slice(None), [
+                "1", "2", "3", "4", "5"]), :]
+        elif model == "first":
+            data_tmp = data_tmp.loc[(slice(None), slice(None),
+                                    "1"), :]
+        grouped = data_tmp.groupby(["group", "target"])
+        grouped = pd.DataFrame(grouped[feature].max())
+        grouped.index = grouped.index.droplevel(1)
+        # sort grouped
+        grouped = grouped.sort_values(by=feature, ascending=False)
+        initial_z = (grouped - grouped.mean()) / grouped.std()
+        new_z_score = pd.DataFrame(
+            index=grouped.index, columns=grouped.columns)
+        filtered_data = grouped[feature][initial_z[feature] >= -2]
+        new_mean = filtered_data.mean(skipna=True)
+        new_std = filtered_data.std(skipna=True)
+        new_z_score[feature] = (grouped[feature] - new_mean) / new_std
+        new_z_score = new_z_score.fillna(-2.0)
+        new_z_score = new_z_score.where(new_z_score > -2, -2)
 
-wanted_group = ["052", "022", "456", "051",
-                "319", "287", "208", "028", "019", "294", "465", "110", "345", "139"]
-wanted_group = ["TS"+group for group in wanted_group]
+        # breakpoint()
 
-points = {}
+        # I actually don't understand why this is necessary... but need to keep it in mind.
+        # grouped = grouped.apply(lambda x: (x - x.mean()) / x.std())
+
+        new_z_score = new_z_score.rename(
+            columns={feature: csv_file.split(".")[0]})
+        data = pd.concat([data, new_z_score], axis=1)
+    # impute data again with -2
+    data = data.fillna(-2.0)
+
+    data.to_csv("./group_by_target/" +
+                "group_by_target-{}-{}-{}.csv".format(feature, model, mode))
+
+    data["sum"] = data.sum(axis=1)
+    data = data.sort_values(by="sum", ascending=False)
+    data.to_csv("./sum/" + "sum_{}_{}_step10.csv".format(model, mode))
+
+
+for feature in features:
+    get_group_by_target(csv_list, csv_path, feature, model, mode)
+    print("Finished processing {}".format(feature))
