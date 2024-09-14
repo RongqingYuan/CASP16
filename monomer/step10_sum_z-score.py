@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import sys
 import os
 
 
@@ -144,6 +143,9 @@ features = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P
             'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
             'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
 
+inverse_columns = ["RMS_CA", "RMS_ALL", "err",
+                   "RMSD[L]", "MolPrb_Score", "FlexE", "MP_clash", "MP_rotout", "MP_ramout"]
+
 
 def get_group_by_target(csv_list, csv_path, feature, model, mode):
     data = pd.DataFrame()
@@ -152,6 +154,8 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
         data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
         data_tmp = pd.DataFrame(data_tmp[feature])
         print(data_tmp.shape)
+        if feature in inverse_columns:
+            data_tmp[feature] = -data_tmp[feature]
         data_tmp.index = data_tmp.index.str.extract(
             r'(T\w+)TS(\w+)_(\w+)-(D\w+)').apply(lambda x: (f"{x[0]}-{x[3]}", f"TS{x[1]}", x[2]), axis=1)
         data_tmp.index = pd.MultiIndex.from_tuples(
@@ -196,7 +200,7 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
 
     data["sum"] = data.sum(axis=1)
     data = data.sort_values(by="sum", ascending=False)
-    data.to_csv("./sum/" + "sum_{}_{}_step10.csv".format(model, mode))
+    data.to_csv("./sum/" + "sum_{}-{}-{}.csv".format(feature, model, mode))
 
 
 for feature in features:
