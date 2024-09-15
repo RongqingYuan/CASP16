@@ -1,20 +1,24 @@
 import pandas as pd
 import numpy as np
-import sys
-import os
 from factor_analyzer import FactorAnalyzer
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.decomposition import NMF
+
 
 features = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
             'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
-            #   'SphGr',
+            'SphGr',
             'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
             'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
 
 mode = "all"
-model = "best"
+# mode = "hard"
+# mode = "medium"
+# mode = "easy"
+
 model = "first"
+model = "best"
 
 path = "./sum/"
 
@@ -39,19 +43,54 @@ for feature in features:
 
 data_all.to_csv(
     "./tmp/" + "sum_all-{}-{}_expanded.csv".format(model, mode))
+# drop rows with all -2 values
+data_all_exist = data_all[~(data_all == -2.0).all(axis=1)]
+# 交换 MolPrb_Score 和 CAD_SS 两列
+cols = list(data_all_exist.columns)
+# 获取 MolPrb_Score 和 CAD_SS 的索引位置
+idx1, idx2 = cols.index('MolPrb_Score'), cols.index('CAD_SS')
+# 交换列的位置
+cols[idx1], cols[idx2] = cols[idx2], cols[idx1]
+# 重新排列 DataFrame 的列
+data_all_exist_new = data_all_exist[cols]
 
-N = 3
+# swap these two measure and the data: MolPrb_Score and CAD_SS
+# get the correlation matrix of the data
+correlation_matrix = data_all_exist_new.corr()
+# plot the correlation matrix
+plt.figure(figsize=(18, 12), dpi=300)
+cmap = sns.diverging_palette(240, 10, as_cmap=True)  # 240°是蓝色，10°是红色
+ax = sns.heatmap(correlation_matrix, annot=True,
+                 cmap=cmap, cbar=True, center=0, square=True)
+ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
+plt.title("Correlation Matrix")
+plt.savefig("./tmp/" + "correlation_matrix.png", dpi=300)
+
+
+# # NMF data_all_exist
+# N = 3
+# model = NMF(n_components=N, init='random', random_state=0)
+# W = model.fit_transform(data_all_exist_new)
+# H = model.components_
+
+breakpoint()
+
+
+N = 5
 # Load_Matrix_rotated = FactorAnalyzer(
 #     rotation='varimax', n_factors=N, method='principal')
-Load_Matrix_rotated = FactorAnalyzer(
-    rotation='promax', n_factors=N, method='principal')
+# Load_Matrix_rotated = FactorAnalyzer(
+#     rotation='promax', n_factors=N, method='principal')
 # Load_Matrix_rotated = FactorAnalyzer(
 #     rotation='promax', n_factors=N, method='principal')
 # Load_Matrix_rotated = FactorAnalyzer(
 #     rotation='varimax', n_factors=N, method='minres')
 # Load_Matrix_rotated = FactorAnalyzer(
 #     rotation='promax', n_factors=N, method='minres')
-Load_Matrix_rotated.fit(data_all)
+
+Load_Matrix_rotated = FactorAnalyzer(
+    rotation='promax', n_factors=N, method='principal', is_corr_matrix=False)
+Load_Matrix_rotated.fit(data_all_exist)
 f_contribution_var_rotated = Load_Matrix_rotated.get_factor_variance()
 matrices_var_rotated = pd.DataFrame()
 matrices_var_rotated["eigenvalue"] = f_contribution_var_rotated[0]
@@ -70,7 +109,7 @@ ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
 plt.title("Factor Analysis (abs)", fontsize="xx-large")
 plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
 # 保存图片
-plt.savefig("./tmp/" + "FA_abs.png")
+plt.savefig("./tmp/" + "FA_abs.png", dpi=300)
 
 
 df = pd.DataFrame(Load_Matrix, index=data_all.columns)
@@ -79,18 +118,35 @@ cmap = sns.diverging_palette(240, 10, as_cmap=True)  # 240°是蓝色，10°是�
 ax = sns.heatmap(df, annot=True, cmap=cmap, center=0, cbar=True)
 # ax = sns.heatmap(df, annot=True, cmap="BuPu", cbar=True)
 ax.yaxis.set_tick_params(labelsize=10)  # 设置y轴字体大小
-plt.title("Factor Analysis", fontsize="xx-large")
+plt.title("Loading Matrix", fontsize=12)
 plt.xlabel("factors", fontsize=12)  # 设置x轴标签
 # plt.xlabel("factors", fontsize="xx-large")  # 设置x轴标签
 # set the x-axis to be factor1, factor2, ...
 ax.set_xticklabels(["factor" + str(i + 1) for i in range(N)], fontsize=10)
-plt.savefig("./tmp/" + "FA_{}.png".format(N))
+plt.savefig("./tmp/" + "FA_{}.png".format(N), dpi=300)
 
 
 M = Load_Matrix_rotated.loadings_
 N_ = np.dot(M.T, M)
 N_inv = np.linalg.inv(N_)
 F_mat = np.dot(N_inv, M.T)
+breakpoint()
+F_mat_T = F_mat.T
+F_mat_T = pd.DataFrame(F_mat_T, index=data_all.columns)
+
+plt.figure(figsize=(8, 6), dpi=300)
+cmap = sns.diverging_palette(240, 10, as_cmap=True)  # 240°是蓝色，10°是红色
+ax = sns.heatmap(F_mat_T, annot=True, cmap=cmap, center=0, cbar=True)
+# ax = sns.heatmap(df, annot=True, cmap="BuPu", cbar=True)
+ax.yaxis.set_tick_params(labelsize=10)  # 设置y轴字体大小
+plt.title("Weight Matrix", fontsize=10)
+plt.xlabel("factors", fontsize=10)  # 设置x轴标签
+# plt.xlabel("factors", fontsize="xx-large")  # 设置x轴标签
+# set the x-axis to be factor1, factor2, ...
+ax.set_xticklabels(["factor" + str(i + 1) for i in range(N)], fontsize=10)
+plt.savefig("./tmp/" + "weight_FA_{}.png".format(N), dpi=300)
+
+
 regression_score = data_all@F_mat.T
 high_resolution_score = regression_score[2]
 chemical_score = regression_score[1]
