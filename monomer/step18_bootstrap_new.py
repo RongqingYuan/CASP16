@@ -7,14 +7,16 @@ from scipy import stats
 import sys
 
 
-score_path = "./by_target/"
+score_path = "./group_by_target/"
 measure = "RMSD[L]"
 measure = "RMS_CA"
 measure = "GDT_HA"
 measure = "GDT_TS"
+measure = sys.argv[1]
 
 measures = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
-            'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT', 'SphGr',
+            'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
+            #   'SphGr',
             'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
             'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
 hard_group = [
@@ -115,9 +117,17 @@ easy_group = [
     "T1295-D2",
     # "T1214",
 ]
-for measure in measures:
-    score_file = "groups_by_targets_for-raw-{}-EU.csv".format(measure)
-    score_file = "groups_by_targets_for-{}-EU.csv".format(measure)
+mode = "hard"
+mode = "medium"
+mode = "easy"
+mode = "all"
+model = "best"
+model = "first"
+
+
+def bootstrap(measure, mode, model):
+    # score_file = "groups_by_targets_for-raw-{}-EU.csv".format(measure)
+    score_file = "group_by_target-{}-{}-{}.csv".format(measure, model, mode)
     score_matrix = pd.read_csv(score_path + score_file, index_col=0)
     # score_matrix = score_matrix.T
     T1_data = score_matrix.filter(regex='T1')
@@ -132,10 +142,6 @@ for measure in measures:
     T1_data_tmp['sum'] = sum
     T1_data_tmp = T1_data_tmp.sort_values(by='sum', ascending=False)
 
-    mode = "hard"
-    mode = "medium"
-    mode = "easy"
-    mode = "all"
     if mode == "all":
         pass
     elif mode == "easy":
@@ -181,7 +187,7 @@ for measure in measures:
                 points[group_1] += 1
     points = dict(sorted(points.items(), key=lambda x: x[1], reverse=True))
     print(points)
-    with open("./bootstrap/{}_{}_{}.txt".format(measure, mode, "initial_ranking"), "w") as f:
+    with open("./bootstrap/{}_{}_{}_ranking_step18.txt".format(measure, model, mode), 'w') as f:
         f.write(str(points))
     # use the above t-test code to get a initial ranking of the groups.
     # then generate new groups list using the ranking
@@ -233,12 +239,14 @@ for measure in measures:
     plt.title("Bootstrap result of {} for {} targets".format(
         measure, mode), fontsize=20)
     plt.savefig(
-        "./bootstrap/win_matrix_bootstrap_{}_{}_n={}.png".format(measure, mode, bootstrap_rounds), dpi=300)
+        "./bootstrap/win_matrix_bootstrap_{}_{}_{}_n={}_step18.png".format(measure, model, mode, bootstrap_rounds), dpi=300)
     # save the win matrix as a numpy array
 
-    np.save("./bootstrap/win_matrix_bootstrap_{}_{}_n={}.npy".format(
-        measure, mode, bootstrap_rounds), win_matrix)
+    np.save("./bootstrap/win_matrix_bootstrap_{}_{}_{}_n={}_step18.npy".format(
+        measure, model, mode, bootstrap_rounds), win_matrix)
 
+
+bootstrap(measure, mode, model)
 sys.exit(0)
 
 # group 1 is the first group in the ranked points
