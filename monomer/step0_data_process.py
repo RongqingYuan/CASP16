@@ -7,7 +7,7 @@ import time
 # monomer_path = "/data/data1/conglab/qcong/CASP16/monomers/"
 monomer_path = "/home2/s439906/data/CASP16/monomers/"
 monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_8/"
-monomer_path = "/home2/s439906/data/CASP16/monomer_Sep_10/"
+monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_10/"
 
 monomer_list = [txt for txt in os.listdir(
     monomer_path) if txt.endswith(".txt")]
@@ -86,17 +86,26 @@ for monomer in monomer_list:
             if len(line) > 1:
                 data.append(line)
 
-    # convert the data to dataframe, the first row is the column names, the first column is the index
     data = pd.DataFrame(data)
-    # set the first row as the column names
     data.columns = data.iloc[0]
-    # drop the first row
     data = data.drop(0)
+
+    # BUG 1 if there is a header called MODEL, change it to Model
     # set the "Model" column as the index
-    # if there is a header called MODEL, change it to Model
     if "MODEL" in data.columns:
         data = data.rename(columns={"MODEL": "Model"})
-    data = data.set_index("Model")
+    try:
+        data = data.set_index("Model")
+    except KeyError:
+        print("KeyError: ", monomer)
+        sys.exit()
+
+    # BUG 2 another strange bug. Some index line does not have -D* as the suffix. We need to fill them out
+    if "-D" in monomer:
+        domain_id = monomer.split(".")[0].split("-")[1]
+        data.index = data.index.map(
+            lambda x: x + "-" + domain_id if "-D" not in x else x)
+    # breakpoint()
 
     # save it as complete raw data, in case we need it later
     data.to_csv(monomer_data_raw_all_path + monomer[:-4] + ".csv")
