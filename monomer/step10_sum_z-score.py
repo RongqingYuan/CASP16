@@ -137,9 +137,10 @@ elif mode == "all":
 # breakpoint()
 # read all data and concatenate them into one big dataframe
 feature = "GDT_TS"
-features = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
+features = ['GDT_TS',
+            'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
             'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
-            #   'SphGr',
+            'SphGr',
             'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
             'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
 
@@ -153,7 +154,9 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
         print("Processing {}".format(csv_file))
         data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
         data_tmp = pd.DataFrame(data_tmp[feature])
-        print(data_tmp.shape)
+        # if there is "-" in the value, replace it with 0
+        data_tmp = data_tmp.replace("-", float(0))
+        # print(data_tmp.shape)
         if feature in inverse_columns:
             data_tmp[feature] = -data_tmp[feature]
         data_tmp.index = data_tmp.index.str.extract(
@@ -172,9 +175,20 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
         grouped = data_tmp.groupby(["group", "target"])
         grouped = pd.DataFrame(grouped[feature].max())
         grouped.index = grouped.index.droplevel(1)
-        # sort grouped
-        grouped = grouped.sort_values(by=feature, ascending=False)
-        initial_z = (grouped - grouped.mean()) / grouped.std()
+        # if there is any value in this column that is a string, convert it to float
+        grouped[feature] = grouped[feature].astype(float)
+        try:
+            # # find if there is any string in the dataframe
+            # for i in range(grouped.shape[0]):
+            #     for j in range(grouped.shape[1]):
+            #         if isinstance(grouped.iloc[i, j], str):
+            #             print(grouped.iloc[i, j])
+            grouped = grouped.sort_values(by=feature, ascending=False)
+            # print all the value in grouped
+            # for i in range(grouped.shape[0]):print(grouped.iloc[i])
+            initial_z = (grouped - grouped.mean()) / grouped.std()
+        except:
+            breakpoint()
         new_z_score = pd.DataFrame(
             index=grouped.index, columns=grouped.columns)
         filtered_data = grouped[feature][initial_z[feature] >= -2]
