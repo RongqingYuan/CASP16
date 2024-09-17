@@ -10,12 +10,23 @@ import json
 
 score_path = "./group_by_target/"
 file_path = "./bootstrap/"
+score_path = "./group_by_target_EU/"
+file_path = "./bootstrap_EU/"
 # measure = sys.argv[1]
 measure = "GDT_TS"
+mode = "hard"
+# mode = "medium"
+# mode = "easy"
+mode = "all"
+
+model = "first"
+model = "best"
+p_value_threshold = 0.005
+bootstrap_rounds = 1000
 
 measures = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
             'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
-            #   'SphGr',
+            'SphGr',
             'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
             'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
 hard_group = [
@@ -116,15 +127,9 @@ easy_group = [
     "T1295-D2",
     # "T1214",
 ]
-# mode = "hard"
-mode = "medium"
-mode = "easy"
-mode = "all"
 
-model = "first"
-model = "best"
-bootstrap_rounds = 1000
-dict_file = "{}_{}_{}_ranking_step18.txt".format(measure, model, mode)
+dict_file = "{}_{}_{}_p={}_ranking_step18.txt".format(
+    measure, model, mode, p_value_threshold)
 dict_obj = None
 
 with open(file_path + dict_file, "r") as f:
@@ -133,8 +138,8 @@ with open(file_path + dict_file, "r") as f:
         # breakpoint()
         dict_obj = eval(line)
 
-win_matrix_file = "win_matrix_bootstrap_{}_{}_{}_n={}_step18.npy".format(
-    measure, model, mode, str(bootstrap_rounds))
+win_matrix_file = "win_matrix_bootstrap_{}_{}_{}_p={}_n={}_step18.npy".format(
+    measure, model, mode, p_value_threshold, str(bootstrap_rounds))
 
 win_matrix = np.load(file_path + win_matrix_file)
 # breakpoint()
@@ -157,9 +162,10 @@ print(valid_count, total_count, valid_count / total_count)
 print()
 
 bootstrap_stats = {}
-top_n = 10
+top_n = 25
 for measure in measures:
-    dict_file = "{}_{}_{}_ranking_step18.txt".format(measure, model, mode)
+    dict_file = "{}_{}_{}_p={}_ranking_step18.txt".format(
+        measure, model, mode, p_value_threshold)
     dict_obj = None
 
     with open(file_path + dict_file, "r") as f:
@@ -168,8 +174,8 @@ for measure in measures:
             # breakpoint()
             dict_obj = eval(line)
 
-    win_matrix_file = "win_matrix_bootstrap_{}_{}_{}_n={}_step18.npy".format(
-        measure, model, mode, str(bootstrap_rounds))
+    win_matrix_file = "win_matrix_bootstrap_{}_{}_{}_p={}_n={}_step18.npy".format(
+        measure, model, mode, p_value_threshold, str(bootstrap_rounds))
 
     win_matrix = np.load(file_path + win_matrix_file)
     # breakpoint()
@@ -194,14 +200,15 @@ for measure in measures:
 bootstrap_stats = dict(sorted(bootstrap_stats.items(),
                               key=lambda x: x[1], reverse=True))
 print(bootstrap_stats)
-
+if not os.path.exists("./bootstrap_analysis_EU/"):
+    os.makedirs("./bootstrap_analysis_EU/")
 # plot the bootstrap_stats
 plt.figure(figsize=(12.5, 7.5))
 plt.bar(bootstrap_stats.keys(), bootstrap_stats.values())
-plt.xticks(rotation=45)
+plt.xticks(rotation=45, ha='right')
 plt.ylabel("Winning Rate")
-plt.title("Bootstrap Winning Rate for {} {} top {} targets".format(
+plt.title("Bootstrap Winning Rate for {} {} top {} groups".format(
     model, mode, top_n))
 
-plt.savefig("./bootstrap_analysis/" + "bootstrap_winning_rate_{}_{}_{}_top_{}.png".format(
-    model, mode, bootstrap_rounds, top_n), dpi=300)
+plt.savefig("./bootstrap_analysis_EU/" + "bootstrap_winning_rate_{}_{}_{}_p={}_top_{}.png".format(
+    model, mode, bootstrap_rounds, p_value_threshold, top_n), dpi=300)

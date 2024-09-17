@@ -4,8 +4,8 @@
 # #SBATCH --gres=gpu:1
 #SBATCH --mem=128g
 #SBATCH -t 28-00:00:00
-#SBATCH -o step18_bootstrap_a.log
-#SBATCH -e step18_bootstrap_a.err
+#SBATCH -o step18_bootstrap_new_a.log
+#SBATCH -e step18_bootstrap_new_a.err
 #SBATCH -J step18_bootstrap
 
 
@@ -16,7 +16,7 @@
 
 
 # write a loop to run the job for all measures
-measures=(GDT_TS GDT_HA GDC_SC GDC_ALL RMS_CA RMS_ALL AL0_P AL4_P ALI_P LGA_S RMSD[L] MolPrb_Score LDDT CAD_AA RPF TMscore FlexE QSE CAD_SS MP_clash MP_rotout MP_ramout MP_ramfv reLLG_lddt reLLG_const)
+measures=(GDT_TS GDT_HA GDC_SC GDC_ALL RMS_CA RMS_ALL AL0_P AL4_P ALI_P LGA_S RMSD[L] MolPrb_Score LDDT SphGr CAD_AA RPF TMscore FlexE QSE CAD_SS MP_clash MP_rotout MP_ramout MP_ramfv reLLG_lddt reLLG_const)
 
 for measure in "${measures[@]}"
 do

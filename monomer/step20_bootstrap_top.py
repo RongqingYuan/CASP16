@@ -10,14 +10,35 @@ import json
 
 score_path = "./group_by_target/"
 file_path = "./bootstrap/"
+score_path = "./group_by_target_EU/"
+file_path = "./bootstrap_EU/"
+out_path = "./bootstrap_analysis_EU/"
 # measure = sys.argv[1]
 measure = "GDT_TS"
 
+measure = "GDC_SC"
+measure = "GDT_HA"
+measure = "AL0_P"
+measure = "SphGr"
+measure = "CAD_AA"
+measure = "QSE"
+measure = "MolPrb_Score"
+measure = "reLLG_const"
+
+mode = "hard"
+mode = "medium"
+mode = "easy"
+mode = "all"
+model = "first"
+model = "best"
+p_value_threshold = 0.05
+bootstrap_rounds = 1000
 measures = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
             'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
-            #   'SphGr',
+            'SphGr',
             'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
             'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
+
 hard_group = [
     "T1207-D1",
     "T1210-D1",
@@ -116,15 +137,9 @@ easy_group = [
     "T1295-D2",
     # "T1214",
 ]
-mode = "hard"
-mode = "medium"
-mode = "easy"
-# mode = "all"
 
-model = "first"
-model = "best"
-bootstrap_rounds = 1000
-dict_file = "{}_{}_{}_ranking_step18.txt".format(measure, model, mode)
+dict_file = "{}_{}_{}_p={}_ranking_step18.txt".format(
+    measure, model, mode, p_value_threshold)
 dict_obj = None
 
 with open(file_path + dict_file, "r") as f:
@@ -133,8 +148,8 @@ with open(file_path + dict_file, "r") as f:
         # breakpoint()
         dict_obj = eval(line)
 
-win_matrix_file = "win_matrix_bootstrap_{}_{}_{}_n={}_step18.npy".format(
-    measure, model, mode, str(bootstrap_rounds))
+win_matrix_file = "win_matrix_bootstrap_{}_{}_{}_p={}_n={}_step18.npy".format(
+    measure, model, mode, p_value_threshold, str(bootstrap_rounds))
 
 win_matrix = np.load(file_path + win_matrix_file)
 # breakpoint()
@@ -153,6 +168,16 @@ ax = sns.heatmap(win_matrix_top_n, annot=False,
                  cmap='Greys', cbar=True, square=True,
                  #  linewidths=1, linecolor='black',
                  )
+# set the largest scale bar to bootstrap_rounds
+cbar = ax.collections[0].colorbar
+# cbar.set_ticks([0, bootstrap_rounds])
+# cbar.set_ticklabels([0, bootstrap_rounds])
+# also set 0, int(bootstrap_rounds/4), int(bootstrap_rounds/2), int(bootstrap_rounds*3/4), bootstrap_rounds
+cbar.set_ticks([0, int(bootstrap_rounds/4), int(bootstrap_rounds/2),
+                int(bootstrap_rounds*3/4), bootstrap_rounds])
+cbar.set_ticklabels([0, int(bootstrap_rounds/4), int(bootstrap_rounds/2),
+                     int(bootstrap_rounds*3/4), bootstrap_rounds])
+cbar.ax.tick_params(labelsize=10)
 for _, spine in ax.spines.items():
     spine.set_visible(True)
     spine.set_linewidth(2)
@@ -162,6 +187,5 @@ plt.xticks(np.arange(top_n), top_n_id, rotation=45, fontsize=10)
 plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=10)
 plt.title("Bootstrap result of {} for {} top {} targets".format(
     measure, mode, top_n), fontsize=15)
-plt.savefig(
-    "./bootstrap/win_matrix_bootstrap_{}_{}_{}_n={}_top_{}_step18.png".format(
-        measure, model, mode, bootstrap_rounds, top_n), dpi=300)
+plt.savefig(out_path + "win_matrix_bootstrap_{}_{}_{}_p={}_n={}_top_{}_step18.png".format(
+    measure, model, mode, p_value_threshold, bootstrap_rounds, top_n), dpi=300)

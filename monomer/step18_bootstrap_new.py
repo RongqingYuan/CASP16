@@ -7,16 +7,23 @@ from scipy import stats
 import sys
 
 
-score_path = "./group_by_target/"
+score_path = "./group_by_target_EU/"
 measure = "RMSD[L]"
 measure = "RMS_CA"
 measure = "GDT_HA"
 measure = "GDT_TS"
 measure = sys.argv[1]
 
+mode = "hard"
+mode = "medium"
+mode = "easy"
+mode = "all"
+model = "first"
+model = "best"
+
 measures = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
             'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
-            #   'SphGr',
+            'SphGr',
             'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
             'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
 hard_group = [
@@ -117,30 +124,38 @@ easy_group = [
     "T1295-D2",
     # "T1214",
 ]
-mode = "hard"
-mode = "medium"
-mode = "easy"
-mode = "all"
-model = "best"
-model = "first"
 
 
-def bootstrap(measure, mode, model):
+# # 假设 T1_data 中有一列 'target_column' 用于分层
+
+# def stratified_sample(df, stratify_column, frac=1, replace=True):
+#     # 按照 stratify_column 的值进行分组，然后在每个组内进行采样
+#     return df.groupby(stratify_column, group_keys=False).apply(
+#         lambda x: x.sample(frac=frac, replace=replace)
+#     )
+
+
+# # 进行分层采样
+# # T1_data_bootstrap = stratified_sample(T1_data, stratify_column='target', frac=1, replace=True)
+
+
+def bootstrap(measure, mode, model, p_value_threshold=0.05):
     # score_file = "groups_by_targets_for-raw-{}-EU.csv".format(measure)
     score_file = "group_by_target-{}-{}-{}.csv".format(measure, model, mode)
     score_matrix = pd.read_csv(score_path + score_file, index_col=0)
     # score_matrix = score_matrix.T
     T1_data = score_matrix.filter(regex='T1')
-    print(score_matrix.shape)
-    print(score_matrix.head())
-    print(T1_data.shape)
-    print(T1_data.head())
-    T1_data_tmp = T1_data.copy()
-    # impute na with 0
-    T1_data_tmp.fillna(0, inplace=True)
-    sum = T1_data_tmp.sum(axis=1)
-    T1_data_tmp['sum'] = sum
-    T1_data_tmp = T1_data_tmp.sort_values(by='sum', ascending=False)
+
+    # print(score_matrix.shape)
+    # print(score_matrix.head())
+    # print(T1_data.shape)
+    # print(T1_data.head())
+
+    # T1_data_tmp = T1_data.copy()
+    # T1_data_tmp.fillna(0, inplace=True)
+    # sum = T1_data_tmp.sum(axis=1)
+    # T1_data_tmp['sum'] = sum
+    # T1_data_tmp = T1_data_tmp.sort_values(by='sum', ascending=False)
 
     if mode == "all":
         pass
@@ -151,23 +166,19 @@ def bootstrap(measure, mode, model):
     elif mode == "hard":
         T1_data = T1_data[hard_group]
 
-    # breakpoint()
-
     T1_data = T1_data.T
-    print(T1_data.shape)
-    print(T1_data.head())
-    # drop columns with more than 80% values missing
+    # print(T1_data.shape)
+    # print(T1_data.head())
+
+    # remove columns with more than 80% missing values
     T1_data = T1_data.loc[:, T1_data.isnull().mean() < 0.8]
-    # fill na with 0
     if "raw" in score_file:
         T1_data.fillna(50, inplace=True)
     else:
         T1_data.fillna(-2, inplace=True)
-    print(T1_data.shape)
-    print(T1_data.head())
-    # fill na with 0
+    # print(T1_data.shape)
+    # print(T1_data.head())
     groups = T1_data.columns
-
     points = {}
     length = len(groups)
 
@@ -181,13 +192,13 @@ def bootstrap(measure, mode, model):
             group_2_data = T1_data[group_2]
             t_stat, p_value = stats.ttest_rel(group_1_data, group_2_data)
             # print("Group 1: {}, Group 2: {}, t-stat: {}, p-value: {}".format(group_1, group_2, t_stat, p_value))
-            if t_stat > 0 and p_value/2 < 0.05:
+            if t_stat > 0 and p_value/2 < p_value_threshold:
                 if group_1 not in points:
                     points[group_1] = 0
                 points[group_1] += 1
+
     points = dict(sorted(points.items(), key=lambda x: x[1], reverse=True))
-    print(points)
-    with open("./bootstrap/{}_{}_{}_ranking_step18.txt".format(measure, model, mode), 'w') as f:
+    with open("./bootstrap_EU/{}_{}_{}_p={}_ranking_step18.txt".format(measure, model, mode, p_value_threshold), 'w') as f:
         f.write(str(points))
     # use the above t-test code to get a initial ranking of the groups.
     # then generate new groups list using the ranking
@@ -199,9 +210,19 @@ def bootstrap(measure, mode, model):
     length = len(groups)
     win_matrix = [[0 for i in range(length)] for j in range(length)]
     bootstrap_rounds = 1000
-
+    # get the target list, it is the first element when split T1_data.index
+    targets = T1_data.index.map(lambda x: x.split("-")[0])
+    T1_data["target"] = targets
+    # breakpoint()
     for r in range(bootstrap_rounds):
-        T1_data_bootstrap = T1_data.sample(frac=1, replace=True)
+        # T1_data_bootstrap = T1_data.sample(frac=1, replace=True)
+        # T1_data_bootstrap = T1_data.groupby('target', group_keys=False).apply(lambda x: x.sample(n=1))
+        grouped = T1_data.groupby('target')
+        T1_data_bootstrap = grouped.apply(lambda x: x.sample(
+            n=1)).sample(n=len(grouped), replace=True)
+        # sort the T1_data_bootstrap rows by the index
+        T1_data_bootstrap = T1_data_bootstrap.sort_index()
+
         for i in range(length):
             for j in range(length):
                 group_1 = groups[i]
@@ -210,6 +231,9 @@ def bootstrap(measure, mode, model):
                     continue
                 group_1_data = T1_data_bootstrap[group_1]
                 group_2_data = T1_data_bootstrap[group_2]
+                # print all value in group_1_data
+                # for k in range(group_1_data.shape[0]):
+                #     print(group_1_data.iloc[k])
                 # run paired t-test
                 t_stat, p_value = stats.ttest_rel(group_1_data, group_2_data)
                 # print("Group 1: {}, Group 2: {}, t-stat: {}, p-value: {}".format(group_1, group_2, t_stat, p_value))
@@ -219,6 +243,7 @@ def bootstrap(measure, mode, model):
                     points[group_1] += 1
                     win_matrix[i][j] += 1
         print("Round: {}".format(r))
+        # breakpoint()
 
     # breakpoint()
     points = dict(sorted(points.items(), key=lambda x: x[1], reverse=True))
@@ -239,14 +264,14 @@ def bootstrap(measure, mode, model):
     plt.title("Bootstrap result of {} for {} targets".format(
         measure, mode), fontsize=20)
     plt.savefig(
-        "./bootstrap/win_matrix_bootstrap_{}_{}_{}_n={}_step18.png".format(measure, model, mode, bootstrap_rounds), dpi=300)
+        "./bootstrap_EU/win_matrix_bootstrap_{}_{}_{}_p={}_n={}_step18.png".format(measure, model, mode, p_value_threshold, bootstrap_rounds), dpi=300)
     # save the win matrix as a numpy array
 
-    np.save("./bootstrap/win_matrix_bootstrap_{}_{}_{}_n={}_step18.npy".format(
-        measure, model, mode, bootstrap_rounds), win_matrix)
+    np.save("./bootstrap_EU/win_matrix_bootstrap_{}_{}_{}_p={}_n={}_step18.npy".format(
+        measure, model, mode, p_value_threshold, bootstrap_rounds), win_matrix)
 
 
-bootstrap(measure, mode, model)
+bootstrap(measure, mode, model, p_value_threshold=0.05)
 sys.exit(0)
 
 # group 1 is the first group in the ranked points
