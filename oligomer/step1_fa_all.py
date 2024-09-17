@@ -11,18 +11,15 @@ from sympy import *
 from matplotlib import pyplot as plt
 from factor_analyzer import FactorAnalyzer, calculate_kmo, calculate_bartlett_sphericity
 
-csv_path = "./monomer_data/whole/"
-# csv_path = "./monomer_data/EU/"
+csv_path = "./csv/"
+csv_path = "./oligomer_data/processed/"
 png_dir = "./new_png/"
 score_dir = "./new_score/"
 if not os.path.exists(png_dir):
     os.makedirs(png_dir)
-
 if not os.path.exists(score_dir):
     os.makedirs(score_dir)
-
 csv_list = [txt for txt in os.listdir(csv_path) if txt.endswith(".csv")]
-
 # csv_file = csv_path + csv_list[3]
 # print("Processing {}".format(csv_file))
 # data = pd.read_csv(csv_file, index_col=0)
@@ -30,55 +27,17 @@ csv_list = [txt for txt in os.listdir(csv_path) if txt.endswith(".csv")]
 # read all data and concatenate them into one big dataframe
 data = pd.DataFrame()
 for csv_file in csv_list:
-    print("Processing {}".format(csv_file))
     data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
-    print(data_tmp.shape)
+    print(csv_file, data_tmp.shape)
     if data_tmp.shape[1] == 35:
         print("something wrong with {}".format(csv_file))
         sys.exit(0)
     data = pd.concat([data, data_tmp], axis=0)
-# print the first 5 rows
+to_drop = ["Mol.Size", "No.Conts", "No.Clash"]
+data = data.drop(to_drop, axis=1)
 print(data.head())
 print(data.shape)
-# sys.exit(0)
 
-NP_P_remove = False
-NP_remove = False
-FlexE_remove = False
-# NP_P column has issues. if it is all NaN, we will drop it
-if data["NP_P"].isnull().all():
-    data = data.drop("NP_P", axis=1)
-    print("NP_P column is all NaN for {}, so we drop it".format(csv_file))
-    NP_P_remove = True
-# NP column has issues. if it is all NaN, we will drop it
-if data["NP"].isnull().all():
-    data = data.drop("NP", axis=1)
-    print("NP column is all NaN for {}, so we drop it".format(csv_file))
-    NP_remove = True
-# FlexE column has issues. if it is all NaN, we will drop it
-if data["FlexE"].isnull().all():
-    data = data.drop("FlexE", axis=1)
-    print("FlexE column is all NaN for {}, so we drop it".format(csv_file))
-    FlexE_remove = True
-
-# if every value in NP_P is the same, we will drop it
-if not NP_P_remove and data["NP_P"].nunique() == 1:
-    data = data.drop("NP_P", axis=1)
-    print("NP_P column has only one unique value for {}, so we drop it".format(csv_file))
-# if every value in NP is the same, we will drop it
-if not NP_remove and data["NP"].nunique() == 1:
-    data = data.drop("NP", axis=1)
-    print("NP column has only one unique value for {}, so we drop it".format(csv_file))
-# if every value in FlexE is the same, we will drop it
-if not FlexE_remove and data["FlexE"].nunique() == 1:
-    data = data.drop("FlexE", axis=1)
-    print("FlexE column has only one unique value for {}, so we drop it".format(csv_file))
-
-
-# drop these 3 columns: NP_P, NP, err
-data = data.drop(["NP_P", "NP", "err"], axis=1)
-
-print(data.head())
 
 # run kmo test and bartlett test first
 # to see if the data is suitable for factor analysis
@@ -125,7 +84,7 @@ plt.savefig(png_dir+'Eigenvalues_vs_number_of_factors.png', dpi=300)
 
 
 Load_Matrix_rotated = FactorAnalyzer(
-    rotation='varimax', n_factors=N, method='principal')
+    rotation='varimax', n_factors=N, method='mle')
 # Load_Matrix_rotated = FactorAnalyzer(
 #     rotation='promax', n_factors=N, method='principal')
 # Load_Matrix_rotated = FactorAnalyzer(
@@ -164,10 +123,13 @@ ax = sns.heatmap(df, annot=True, cmap=cmap, center=0, cbar=True)
 # ax = sns.heatmap(df, annot=True, cmap="BuPu", cbar=True)
 ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
 plt.title("Factor Analysis", fontsize="xx-large")
-plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
+# plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
+plt.xlabel("factors", fontsize="xx-large")  # 设置x轴标签
+# set the x-axis to be factor1, factor2, ...
+ax.set_xticklabels(["factor" + str(i + 1) for i in range(N)], fontsize=10)
 # 保存图片
 plt.savefig(png_dir + "FA.png")
-plt.show()  # 显示图片
+# plt.show()  # 显示图片
 # sys.exit(0)
 # 计算因子得分（回归方法）（系数矩阵的逆乘以因子载荷矩阵）
 f_corr = data.corr()  # 皮尔逊相关系数

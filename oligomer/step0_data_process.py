@@ -6,17 +6,13 @@ import sys
 import time
 
 oligomer_path = "/data/data1/conglab/qcong/CASP16/oligomers/"
+oligomer_path = "/home2/s439906/data/CASP16/oligomers_Sep_8/"
+
 oligomer_list = [txt for txt in os.listdir(
     oligomer_path) if txt.endswith(".txt")]
 
 oligomer_out_raw_path = "./oligomer_data/raw_data/"
 oligomer_out_path = "./oligomer_data/processed/"
-csv_path = "./csv/"
-csv_raw_path = "./csv_raw/"
-if not os.path.exists(csv_path):
-    os.makedirs(csv_path)
-if not os.path.exists(csv_raw_path):
-    os.makedirs(csv_raw_path)
 if not os.path.exists(oligomer_out_path):
     os.makedirs(oligomer_out_path)
 if not os.path.exists(oligomer_out_raw_path):
@@ -78,13 +74,12 @@ for oligomer in oligomer_list:
     data = data.drop(0)
     # set the "Model" column as the index
     data = data.set_index("Model")
-    data.to_csv(csv_raw_path + oligomer[:-4] + ".csv")  # this is good raw data
+    # this is good raw data
+    data.to_csv(oligomer_out_raw_path + oligomer[:-4] + ".csv")
 
-    # remove the "GR#" column and "#" column
     data = data.drop(["#", "Gr.Code", "Stoich.", "Symm."], axis=1)
-    # # check the data shape
+
     # print(data.shape)
-    # # print the first 5 rows
     # print(data.head())
 
     # impute the N/A values with the mean value of the column
@@ -98,10 +93,20 @@ for oligomer in oligomer_list:
     data = data.astype(float)
     inverse_columns = ["SymmRMSD"]
     data[inverse_columns] = -data[inverse_columns]
-    data = (data - data.mean()) / data.std()
-    data = data[((data >= -2) | data.isna()).all(axis=1)]
-    data = (data - data.mean()) / data.std()
-    data = data.fillna(0.0)
+    initial_z = (data - data.mean()) / data.std()
+    new_z_score = pd.DataFrame(index=data.index, columns=data.columns)
+    for column in data.columns:
+        filtered_data = data[column][initial_z[column] >= -2]
+        new_mean = filtered_data.mean(skipna=True)
+        new_std = filtered_data.std(skipna=True)
+        new_z_score[column] = (data[column] - new_mean) / new_std
+    new_z_score = new_z_score.fillna(-2.0)
+    new_z_score = new_z_score.where(new_z_score > -2, -2.0)
+
+    # data = (data - data.mean()) / data.std()
+    # data = data[((data >= -2) | data.isna()).all(axis=1)]
+    # data = (data - data.mean()) / data.std()
+    # data = data.fillna(0.0)
 
     # try:
     #     data = data.astype(float)
@@ -120,4 +125,4 @@ for oligomer in oligomer_list:
     # print(data.head())
 
     # save the normalized data to csv file
-    data.to_csv(csv_path + oligomer[:-4] + ".csv")
+    new_z_score.to_csv(oligomer_out_path + oligomer[:-4] + ".csv")

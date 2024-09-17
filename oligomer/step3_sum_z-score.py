@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import sys
@@ -41,15 +42,57 @@ def get_group_by_target(csv_list, feature, model):
     data["sum"] = data.sum(axis=1)
     data = data.sort_values(by="sum", ascending=False)
     data.to_csv("./group_by_target/" + "sum_{}_{}.csv".format(model, feature))
-
-    return 0
+    # drop sum column
+    data_sum = data["sum"]
+    data_sum_dict = data_sum.to_dict()
+    data = data.drop("sum", axis=1, inplace=False)
+    return data, data_sum_dict
 
 
 features = ["QSglob", "ICS(F1)", "lDDT", "DockQ_Avg",
             "IPS(JaccCoef)", "TMscore"]
 models = ["best", "first"]
-
+model = models[0]
+data_all = pd.DataFrame()
+score_sum_dict = {}
 for feature in features:
-    for model in models:
-        get_group_by_target(csv_list, feature, model)
-        print("Done for {} {}".format(feature, model))
+    data, data_sum_dict = get_group_by_target(csv_list, feature, model)
+    print(data.head())
+    data_all = pd.concat([data_all, data], axis=1)
+    print("Done for {} {}".format(feature, model))
+    score_sum_dict[feature] = data_sum_dict
+data_all["sum"] = data_all.sum(axis=1)
+data_all = data_all.sort_values(by="sum", ascending=False)
+data_all.to_csv("./group_by_target/sum_{}_all.csv".format(model))
+
+
+score_sum = {}
+for key in score_sum_dict:
+    score = score_sum_dict[key]
+    for group in score:
+        if group not in score_sum:
+            score_sum[group] = 0
+        score_sum[group] += score[group]
+score_sum = dict(sorted(score_sum.items(), key=lambda x: x[1], reverse=True))
+print(score_sum)
+
+teams = list(score_sum.keys())
+ind = np.arange(len(teams))
+
+# plot the bar chart
+fig, ax = plt.subplots(figsize=(30, 15))
+bottom = [0 for i in range(len(teams))]
+for key in score_sum_dict:
+    score = score_sum_dict[key]
+    score = [score[team] for team in teams]
+    ax.bar(ind, score, label=key, bottom=bottom, width=0.8)
+    bottom = [bottom[i] + score[i] for i in range(len(teams))]
+
+ax.set_xticks(ind)
+teams = [team[2:] for team in teams]
+ax.set_xticklabels(teams, rotation=45, ha='right', fontsize=10)
+ax.legend(fontsize=12)
+plt.xlabel("Teams", fontsize=12)
+plt.ylabel("Sum of z-score", fontsize=12)
+plt.title("Sum of z-score for each team", fontsize=12)
+plt.savefig("./png/sum_z-score.png", dpi=300)

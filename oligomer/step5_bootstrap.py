@@ -1,3 +1,4 @@
+import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -5,8 +6,8 @@ import scipy.stats as stats
 import sys
 
 
-model = "first"
-model = "best"
+models = ["best", "first"]
+
 features = ["QSglob"]
 features = ["QSglob", "ICS(F1)", "lDDT", "DockQ_Avg",
             "IPS(JaccCoef)", "TMscore"]
@@ -14,9 +15,78 @@ features = ["QSglob", "ICS(F1)", "lDDT", "DockQ_Avg",
             "IPS(JaccCoef)"]
 features = ["QSglob", "ICS(F1)",
             "IPS(JaccCoef)"]
-models = ["best", "first"]
 
-feature = features[0]
+feature = features[2]
+feature = "TMscore"
+feature = "DockQ_Avg"
+model = "first"
+model = "best"
+
+data_file = "sum_{}_{}.csv".format(model, feature)
+data_path = "./group_by_target/"
+data = pd.read_csv(data_path + data_file, index_col=0)
+data = data.drop("sum", axis=1)
+data = data.T
+# breakpoint()
+data.fillna(-2, inplace=True)
+# breakpoint()
+groups = data.columns
+# breakpoint()
+
+points = {}
+length = len(groups)
+for i in range(length):
+    for j in range(length):
+        if i == j:
+            continue
+        group_1 = groups[i]
+        group_2 = groups[j]
+        data_1 = data[group_1]
+        data_2 = data[group_2]
+        t, p = stats.ttest_rel(data_1, data_2)
+        if group_1 not in points:
+            points[group_1] = 0
+        if t > 0 and p/2 < 0.05:
+            points[group_1] += 1
+points = dict(sorted(points.items(), key=lambda x: x[1], reverse=True))
+print(points)
+groups = list(points.keys())
+
+bootstrap_points = {}
+bootstrap_win_matrix = [[0 for i in range(length)] for j in range(length)]
+bootstrap_rounds = 1000
+
+for r in range(bootstrap_rounds):
+    data_bootstrap = data.sample(frac=1, replace=True, axis=0)
+    for i in range(length):
+        for j in range(length):
+            if i == j:
+                continue
+            group_1 = groups[i]
+            group_2 = groups[j]
+            data_1 = data_bootstrap[group_1]
+            data_2 = data_bootstrap[group_2]
+            t, p = stats.ttest_rel(data_1, data_2)
+            if t > 0 and p/2 < 0.05:
+                bootstrap_win_matrix[i][j] += 1
+    print("Round: {}".format(r))
+
+plt.figure(figsize=(30, 25))
+ax = sns.heatmap(bootstrap_win_matrix, annot=False,
+                 cmap='Greys', cbar=True, square=True, )
+#  linewidths=1, linecolor='black')
+for _, spine in ax.spines.items():
+    spine.set_visible(True)
+    spine.set_linewidth(2)
+ax.set_xticklabels(ax.get_xticklabels(), horizontalalignment='center')
+ax.set_yticklabels(ax.get_yticklabels(), verticalalignment='center')
+plt.xticks(np.arange(length), groups, rotation=45, ha='right', fontsize=10)
+plt.yticks(np.arange(length), groups, rotation=0, fontsize=10)
+plt.title("Bootstrap result of {} for {} targets".format(
+    feature, model), fontsize=20)
+plt.savefig(
+    "./bootstrap/win_matrix_bootstrap_{}_{}_n={}.png".format(feature, model, bootstrap_rounds), dpi=300)
+sys.exit(0)
 
 
 def paired_t_test_for_groups(model, feature):
