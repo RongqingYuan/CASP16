@@ -10,8 +10,27 @@ monomer/*png
 monomer/new_score
 monomer/monomer_data_aug_28/
 monomer/monomer_data_aug_30/
+monomer/monomer_data_sep*/
+monomer/monomer_data_Sep*/
 monomer/sum/
+monomer/bootstrap*/
+monomer/group_by_target/
+monomer/cluster_target/
+monomer/*err
+monomer/*log
+monomer/by_EU/
+monomer/group_by_target_EU/
+monomer/group_by_target_raw_EU/
+monomer/sum_raw_EU/
+monomer/sum_EU/
+monomer/monomer_data_regular_CASP15/
+monomer/group_by_target_raw_CASP15/
+monomer/group_by_target_raw_EU/
+monomer/csv_tmp_CASP15/
+monomer/baseline_data_Sep_15_EU/
+monomer/sum_raw_CASP15/
 
+oligomer/group_by_target_EU/
 oligomer/csv/
 oligomer/csv_raw/
 oligomer/old/
@@ -19,4 +38,8 @@ oligomer/new_png
 oligomer/*png
 oligomer/new_score
 oligomer/oligomer_data
+oligomer/sum/
+oligomer/group_by_target/
+oligomer/bootstrap/
+oligomer/oligomer_data_Sep*/
 tmp/
