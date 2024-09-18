@@ -16,14 +16,14 @@ out_path = "./bootstrap_analysis_EU/"
 # measure = sys.argv[1]
 measure = "GDT_TS"
 
-measure = "GDC_SC"
 measure = "GDT_HA"
-measure = "AL0_P"
-measure = "SphGr"
-measure = "CAD_AA"
-measure = "QSE"
+# measure = "GDC_SC"
+# measure = "AL0_P"
+# measure = "SphGr"
+# measure = "CAD_AA"
+# measure = "QSE"
 measure = "MolPrb_Score"
-measure = "reLLG_const"
+# measure = "reLLG_const"
 
 mode = "hard"
 mode = "medium"
@@ -138,7 +138,7 @@ easy_group = [
     # "T1214",
 ]
 
-dict_file = "{}_{}_{}_p={}_ranking_step18.txt".format(
+dict_file = "{}_{}_{}_p={}_ranking_t_test_step18.txt".format(
     measure, model, mode, p_value_threshold)
 dict_obj = None
 
@@ -148,7 +148,7 @@ with open(file_path + dict_file, "r") as f:
         # breakpoint()
         dict_obj = eval(line)
 
-win_matrix_file = "win_matrix_bootstrap_{}_{}_{}_p={}_n={}_step18.npy".format(
+win_matrix_file = "win_matrix_bootstrap_{}_{}_{}_p={}_n={}_t_test_step18.npy".format(
     measure, model, mode, p_value_threshold, str(bootstrap_rounds))
 
 win_matrix = np.load(file_path + win_matrix_file)
@@ -161,10 +161,11 @@ top_n_id = list(dict_obj.keys())[:top_n]
 # the win_matrix is the top n by n in the win_matrix
 win_matrix_top_n = win_matrix[:top_n, :top_n]
 
-
+# divide win_matrix_top_n by bootstrap_rounds
+win_matrix_top_n = win_matrix_top_n / bootstrap_rounds
 # plot the win_matrix_top_n
-plt.figure(figsize=(10, 7.5))
-ax = sns.heatmap(win_matrix_top_n, annot=False,
+plt.figure(figsize=(20, 15))
+ax = sns.heatmap(win_matrix_top_n, annot=True, fmt=".2f",
                  cmap='Greys', cbar=True, square=True,
                  #  linewidths=1, linecolor='black',
                  )
@@ -173,10 +174,10 @@ cbar = ax.collections[0].colorbar
 # cbar.set_ticks([0, bootstrap_rounds])
 # cbar.set_ticklabels([0, bootstrap_rounds])
 # also set 0, int(bootstrap_rounds/4), int(bootstrap_rounds/2), int(bootstrap_rounds*3/4), bootstrap_rounds
-cbar.set_ticks([0, int(bootstrap_rounds/4), int(bootstrap_rounds/2),
-                int(bootstrap_rounds*3/4), bootstrap_rounds])
-cbar.set_ticklabels([0, int(bootstrap_rounds/4), int(bootstrap_rounds/2),
-                     int(bootstrap_rounds*3/4), bootstrap_rounds])
+cbar.set_ticks([0, float(1/4), float(1/2),
+                float(3/4), 1])
+cbar.set_ticklabels([0, float(1/4), float(1/2),
+                     float(3/4), 1])
 cbar.ax.tick_params(labelsize=10)
 for _, spine in ax.spines.items():
     spine.set_visible(True)
@@ -187,5 +188,7 @@ plt.xticks(np.arange(top_n), top_n_id, rotation=45, fontsize=10)
 plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=10)
 plt.title("Bootstrap result of {} for {} top {} targets".format(
     measure, mode, top_n), fontsize=15)
-plt.savefig(out_path + "win_matrix_bootstrap_{}_{}_{}_p={}_n={}_top_{}_step18.png".format(
+# fill each cell with the bootstrap value
+
+plt.savefig(out_path + "win_matrix_bootstrap_{}_{}_{}_p={}_n={}_top_{}_t_test_step18.png".format(
     measure, model, mode, p_value_threshold, bootstrap_rounds, top_n), dpi=300)

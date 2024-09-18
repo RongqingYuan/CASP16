@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH -p 256GB
-#SBATCH -n 32
+#SBATCH -n 48
 # #SBATCH --gres=gpu:1
-#SBATCH --mem=128g
+#SBATCH --mem=192g
 #SBATCH -t 28-00:00:00
-#SBATCH -o step18_bootstrap_new_a.log
-#SBATCH -e step18_bootstrap_new_a.err
+#SBATCH -o step18_bootstrap_t_test_a.log
+#SBATCH -e step18_bootstrap_t_test_a.err
 #SBATCH -J step18_bootstrap
 
 
@@ -20,7 +20,7 @@ measures=(GDT_TS GDT_HA GDC_SC GDC_ALL RMS_CA RMS_ALL AL0_P AL4_P ALI_P LGA_S RM
 
 for measure in "${measures[@]}"
 do
-    echo "Running step18_bootstrap_new.py for measure: $measure"
+    echo "Running step18_bootstrap_t-test.py for measure: $measure"
     python step18_bootstrap_new.py $measure &
 done
 wait

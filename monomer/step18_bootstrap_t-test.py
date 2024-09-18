@@ -139,8 +139,11 @@ easy_group = [
 # # T1_data_bootstrap = stratified_sample(T1_data, stratify_column='target', frac=1, replace=True)
 
 
-def bootstrap(measure, mode, model, p_value_threshold=0.05):
+def bootstrap_t_test(measure, mode, model, p_value_threshold=0.05):
     # score_file = "groups_by_targets_for-raw-{}-EU.csv".format(measure)
+    # score_path = "/home2/s439906/project/CASP16/monomer/by_EU/"
+    # score_file = "sum_CASP15_score-{}-{}-equal-weight-False.csv".format(
+    #     model, mode)
     score_file = "group_by_target-{}-{}-{}.csv".format(measure, model, mode)
     score_matrix = pd.read_csv(score_path + score_file, index_col=0)
     # score_matrix = score_matrix.T
@@ -183,6 +186,9 @@ def bootstrap(measure, mode, model, p_value_threshold=0.05):
     length = len(groups)
 
     for i in range(length):
+        group_i = groups[i]
+        points[group_i] = 0
+    for i in range(length):
         for j in range(length):
             group_1 = groups[i]
             group_2 = groups[j]
@@ -193,12 +199,10 @@ def bootstrap(measure, mode, model, p_value_threshold=0.05):
             t_stat, p_value = stats.ttest_rel(group_1_data, group_2_data)
             # print("Group 1: {}, Group 2: {}, t-stat: {}, p-value: {}".format(group_1, group_2, t_stat, p_value))
             if t_stat > 0 and p_value/2 < p_value_threshold:
-                if group_1 not in points:
-                    points[group_1] = 0
                 points[group_1] += 1
 
     points = dict(sorted(points.items(), key=lambda x: x[1], reverse=True))
-    with open("./bootstrap_EU/{}_{}_{}_p={}_ranking_step18.txt".format(measure, model, mode, p_value_threshold), 'w') as f:
+    with open("./bootstrap_EU/{}_{}_{}_p={}_ranking_t_test_step18.txt".format(measure, model, mode, p_value_threshold), 'w') as f:
         f.write(str(points))
     # use the above t-test code to get a initial ranking of the groups.
     # then generate new groups list using the ranking
@@ -221,7 +225,13 @@ def bootstrap(measure, mode, model, p_value_threshold=0.05):
         T1_data_bootstrap = grouped.apply(lambda x: x.sample(
             n=1)).sample(n=len(grouped), replace=True)
         # sort the T1_data_bootstrap rows by the index
+        # breakpoint()
         T1_data_bootstrap = T1_data_bootstrap.sort_index()
+        # breakpoint()
+        bootstrap_points = {}
+        for i in range(length):
+            group_i = groups[i]
+            bootstrap_points[group_i] = 0
 
         for i in range(length):
             for j in range(length):
@@ -237,11 +247,22 @@ def bootstrap(measure, mode, model, p_value_threshold=0.05):
                 # run paired t-test
                 t_stat, p_value = stats.ttest_rel(group_1_data, group_2_data)
                 # print("Group 1: {}, Group 2: {}, t-stat: {}, p-value: {}".format(group_1, group_2, t_stat, p_value))
-                if t_stat > 0 and p_value/2 < 0.05:
-                    if group_1 not in points:
-                        points[group_1] = 0
-                    points[group_1] += 1
+                if t_stat > 0 and p_value/2 < p_value_threshold:
+                    bootstrap_points[group_1] += 1
+
+                # if t_stat > 0 and p_value/2 < 0.05:
+                #     if group_1 not in points:
+                #         points[group_1] = 0
+                #     points[group_1] += 1
+                #     win_matrix[i][j] += 1
+        # breakpoint()
+        for i in range(length):
+            for j in range(length):
+                if i == j:
+                    continue
+                if bootstrap_points[groups[i]] > bootstrap_points[groups[j]]:
                     win_matrix[i][j] += 1
+
         print("Round: {}".format(r))
         # breakpoint()
 
@@ -264,14 +285,14 @@ def bootstrap(measure, mode, model, p_value_threshold=0.05):
     plt.title("Bootstrap result of {} for {} targets".format(
         measure, mode), fontsize=20)
     plt.savefig(
-        "./bootstrap_EU/win_matrix_bootstrap_{}_{}_{}_p={}_n={}_step18.png".format(measure, model, mode, p_value_threshold, bootstrap_rounds), dpi=300)
+        "./bootstrap_EU/win_matrix_bootstrap_{}_{}_{}_p={}_n={}_t_test_step18.png".format(measure, model, mode, p_value_threshold, bootstrap_rounds), dpi=300)
     # save the win matrix as a numpy array
 
-    np.save("./bootstrap_EU/win_matrix_bootstrap_{}_{}_{}_p={}_n={}_step18.npy".format(
+    np.save("./bootstrap_EU/win_matrix_bootstrap_{}_{}_{}_p={}_n={}_t_test_step18.npy".format(
         measure, model, mode, p_value_threshold, bootstrap_rounds), win_matrix)
 
 
-bootstrap(measure, mode, model, p_value_threshold=0.05)
+bootstrap_t_test(measure, mode, model, p_value_threshold=0.05)
 sys.exit(0)
 
 # group 1 is the first group in the ranked points
