@@ -7,12 +7,14 @@ import time
 
 oligomer_path = "/data/data1/conglab/qcong/CASP16/oligomers/"
 oligomer_path = "/home2/s439906/data/CASP16/oligomers_Sep_8/"
+oligomer_path = "/home2/s439906/data/CASP16/oligomers_Sep_17/"
+oligomer_path = "/home2/s439906/data/CASP16/oligomers_Sep_17_merge_v/"
 
 oligomer_list = [txt for txt in os.listdir(
     oligomer_path) if txt.endswith(".txt")]
 
-oligomer_out_raw_path = "./oligomer_data/raw_data/"
-oligomer_out_path = "./oligomer_data/processed/"
+oligomer_out_raw_path = "./oligomer_data_Sep_17/raw_data/"
+oligomer_out_path = "./oligomer_data_Sep_17/processed/"
 if not os.path.exists(oligomer_out_path):
     os.makedirs(oligomer_out_path)
 if not os.path.exists(oligomer_out_raw_path):
@@ -87,12 +89,17 @@ for oligomer in oligomer_list:
     # data = data.apply(pd.to_numeric)
     data.replace("N/A", np.nan, inplace=True)
     data.replace("-", np.nan, inplace=True)
-    data = data.drop(["QS_Interfaces", "SymmGr.RMSD"], axis=1)
+    data = data.drop(["QS_Interfaces"], axis=1)
+    # data = data.drop(["SymmRMSD"], axis=1)
+    try:
+        data = data.drop(["SymmGr.RMSD"], axis=1)
+    except KeyError:
+        print("KeyError: SymmGr.RMSD not found for {}, will continue".format(oligomer))
 
     # convert the data type to float
     data = data.astype(float)
-    inverse_columns = ["SymmRMSD"]
-    data[inverse_columns] = -data[inverse_columns]
+    # inverse_columns = ["SymmRMSD"]
+    # data[inverse_columns] = -data[inverse_columns]
     initial_z = (data - data.mean()) / data.std()
     new_z_score = pd.DataFrame(index=data.index, columns=data.columns)
     for column in data.columns:

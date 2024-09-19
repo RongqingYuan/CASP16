@@ -107,16 +107,19 @@ easy_group = [
 csv_path = "./monomer_data_aug_30/processed/EU/"
 csv_path = "./monomer_data_Sep_10/processed/EU/"
 csv_path = "./monomer_data_Sep_10/raw_data/EU/"
+# csv_path = "./monomer_data_Sep_17/raw_data/"
+csv_path = "./oligomer_data_Sep_17/raw_data/"
+
 csv_list = [txt for txt in os.listdir(
-    csv_path) if txt.endswith(".csv") and txt.startswith("T1")]
+    csv_path) if txt.endswith(".csv") and (txt.startswith("T1") or txt.startswith("H1"))]
 
 model = "first"
 model = "best"
 
-mode = "all"
 mode = "hard"
 mode = "medium"
 mode = "easy"
+mode = "all"
 
 if mode == "hard":
     csv_list = [csv for csv in csv_list if csv.split(
@@ -140,25 +143,29 @@ elif mode == "all":
 feature = "GDT_TS"
 features = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
             'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
-            #   'SphGr',
+            'SphGr',
             'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
             'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
 
 inverse_columns = ["RMS_CA", "RMS_ALL", "err",
                    "RMSD[L]", "MolPrb_Score", "FlexE", "MP_clash", "MP_rotout", "MP_ramout"]
+features = ["QSglob", "QSbest", "ICS(F1)", "lDDT", "DockQ_Avg",
+            "IPS(JaccCoef)", "TMscore"]
 
 
-def get_group_by_target(csv_list, csv_path, feature, model, mode):
+def get_group_by_target(csv_path, csv_list, feature, model):
     data = pd.DataFrame()
+    data_raw = pd.DataFrame()
     for csv_file in csv_list:
-        print("Processing {}".format(csv_file))
         data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
         data_tmp = pd.DataFrame(data_tmp[feature])
-        print(data_tmp.shape)
+        print("Processing {}".format(csv_file), data_tmp.shape)
         if feature in inverse_columns:
             data_tmp[feature] = -data_tmp[feature]
+        # breakpoint()
         data_tmp.index = data_tmp.index.str.extract(
-            r'(T\w+)TS(\w+)_(\w+)-(D\w+)').apply(lambda x: (f"{x[0]}-{x[3]}", f"TS{x[1]}", x[2]), axis=1)
+            r'(\w+)TS(\w+)_(\w+)').apply(lambda x: (f"{x[0]}", f"TS{x[1]}", x[2][0]), axis=1)
+        # breakpoint()
         data_tmp.index = pd.MultiIndex.from_tuples(
             data_tmp.index, names=['target', 'group', 'submission_id'])
         # # get all data with submission_id == 6
@@ -170,9 +177,13 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
         elif model == "first":
             data_tmp = data_tmp.loc[(slice(None), slice(None),
                                     "1"), :]
-        grouped = data_tmp.groupby(["group", "target"])
+        # grouped = data_tmp.groupby(["group", "target"])
+        # grouped = pd.DataFrame(grouped[feature].max())
+        # grouped.index = grouped.index.droplevel(1)
+
+        grouped = data_tmp.groupby(["group"])
         grouped = pd.DataFrame(grouped[feature].max())
-        grouped.index = grouped.index.droplevel(1)
+        # grouped.index = grouped.index.droplevel(1)
         # sort grouped
         grouped = grouped.sort_values(by=feature, ascending=False)
         initial_z = (grouped - grouped.mean()) / grouped.std()
@@ -193,11 +204,17 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
         new_z_score = new_z_score.rename(
             columns={feature: csv_file.split(".")[0]})
         data = pd.concat([data, new_z_score], axis=1)
+        grouped = grouped.rename(
+            columns={feature: csv_file.split(".")[0]})
+        data_raw = pd.concat([data_raw, grouped], axis=1)
     # impute data again with -2
+    # breakpoint()
     data = data.fillna(-2.0)
-
-    data.to_csv("./group_by_target/" +
+    data.to_csv("./group_by_target_EU/" +
                 "group_by_target-{}-{}-{}.csv".format(feature, model, mode))
+
+    data_raw.to_csv("./group_by_target_EU/" +
+                    "group_by_target_raw-{}-{}-{}.csv".format(feature, model, mode))
 
     data["sum"] = data.sum(axis=1)
     data = data.sort_values(by="sum", ascending=False)
@@ -205,5 +222,5 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
 
 
 for feature in features:
-    get_group_by_target(csv_list, csv_path, feature, model, mode)
+    get_group_by_target(csv_path, csv_list, feature, model)
     print("Finished processing {}".format(feature))

@@ -1,18 +1,21 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import sys
 import os
 
 
-csv_path = "./oligomer_data/processed/"
+csv_path = "./oligomer_data_Sep_17/processed/"
 csv_list = [txt for txt in os.listdir(
     csv_path) if txt.endswith(".csv") and txt.startswith("T1") or txt.startswith("H1")]
 
+
+group_by_target_path = "./group_by_target_EU/"
+if not os.path.exists(group_by_target_path):
+    os.makedirs(group_by_target_path)
 feature = "ICS(F1)"
 feature = "QSglob"
-model = "best"
 model = "first"
+model = "best"
 
 
 def get_group_by_target(csv_list, feature, model):
@@ -31,17 +34,22 @@ def get_group_by_target(csv_list, feature, model):
                                     "1", "2", "3", "4", "5"]), :]
         elif model == "first":
             data_tmp = data_tmp.loc[(slice(None), slice(None), "1"), :]
-        grouped = data_tmp.groupby(["group", "target"])
+        grouped = data_tmp.groupby(["group"])
+        # grouped = data_tmp.groupby(["group", "target"])
         grouped = pd.DataFrame(grouped[feature].max())
-        grouped.index = grouped.index.droplevel(1)
+        # grouped.index = grouped.index.droplevel(1)
         grouped = grouped.apply(lambda x: (x - x.mean()) / x.std())
         grouped = grouped.rename(columns={feature: csv_file.split(".")[0]})
         # print(grouped.head())
-        data = pd.concat([data, grouped], axis=1)
-
+        try:
+            data = pd.concat([data, grouped], axis=1)
+        except ValueError:
+            print("ValueError: the data is not consistent for {}".format(csv_file))
+            breakpoint()
     data["sum"] = data.sum(axis=1)
     data = data.sort_values(by="sum", ascending=False)
-    data.to_csv("./group_by_target/" + "sum_{}_{}.csv".format(model, feature))
+    data.to_csv("./group_by_target_EU/" +
+                "sum_{}_{}.csv".format(model, feature))
     # drop sum column
     data_sum = data["sum"]
     data_sum_dict = data_sum.to_dict()
@@ -63,7 +71,7 @@ for feature in features:
     score_sum_dict[feature] = data_sum_dict
 data_all["sum"] = data_all.sum(axis=1)
 data_all = data_all.sort_values(by="sum", ascending=False)
-data_all.to_csv("./group_by_target/sum_{}_all.csv".format(model))
+data_all.to_csv("./group_by_target_EU/sum_{}_all.csv".format(model))
 
 
 score_sum = {}

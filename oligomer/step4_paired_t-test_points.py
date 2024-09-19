@@ -8,20 +8,18 @@ import sys
 model = "first"
 model = "best"
 features = ["QSglob"]
-features = ["QSglob", "ICS(F1)", "lDDT", "DockQ_Avg",
-            "IPS(JaccCoef)", "TMscore"]
+# feature = features[0]
 features = ["QSglob", "ICS(F1)", "lDDT", "DockQ_Avg",
             "IPS(JaccCoef)"]
 features = ["QSglob", "ICS(F1)", "DockQ_Avg",
             "IPS(JaccCoef)"]
-models = ["best", "first"]
-
-feature = features[0]
+features = ["QSglob", "ICS(F1)", "lDDT", "DockQ_Avg",
+            "IPS(JaccCoef)", "TMscore"]
 
 
 def paired_t_test_for_groups(model, feature):
     data_file = "sum_{}_{}.csv".format(model, feature)
-    data_path = "./group_by_target/"
+    data_path = "./group_by_target_EU/"
     data = pd.read_csv(data_path + data_file, index_col=0)
     data = data.drop("sum", axis=1)
     data = data.T
@@ -86,6 +84,7 @@ plt.ylabel("Number of wins", fontsize=12)
 plt.title("Number of wins for each team", fontsize=12)
 plt.savefig("./png/sum_points.png", dpi=300)
 
+sys.exit(0)
 breakpoint()
 # plot the points as bar chart
 
@@ -95,7 +94,7 @@ model = "best"
 feature = "QSglob"
 feature = "TMscore"
 data_file = "sum_{}_{}.csv".format(model, feature)
-data_path = "./group_by_target/"
+data_path = "./group_by_target_EU/"
 data = pd.read_csv(data_path + data_file, index_col=0)
 data = data.drop("sum", axis=1)
 data = data.T
