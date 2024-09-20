@@ -140,9 +140,12 @@ else:
     weights = [1/16, 1/16, 1/16,
                1/12, 1/12,
                1/4, 1/4, 1/4]
+bootstrap_rounds = 1000
 
 
-def bootstrap_sum(model, mode, measures, weight=None, bootstrap_rounds=1000):
+def bootstrap_sum(measures, model, mode,
+                  score_path, output_path="./bootstrap_EU/",
+                  weight=None, bootstrap_rounds=1000):
     if isinstance(measures, str):
         if measures == "CASP15":
             measures = ['LDDT', 'CAD_AA', 'SphGr',
@@ -186,6 +189,7 @@ def bootstrap_sum(model, mode, measures, weight=None, bootstrap_rounds=1000):
     EU_weight = pd.Series(EU_weight)
     # breakpoint()
     data = pd.DataFrame()
+    measure_score_dict = {}
     for i in range(len(measures)):
         measure = measures[i]
         score_file = "group_by_target-{}-{}-{}.csv".format(
@@ -197,7 +201,10 @@ def bootstrap_sum(model, mode, measures, weight=None, bootstrap_rounds=1000):
         # multiply the score_matrix by the weight
         score_matrix = score_matrix * weight_i
         score_matrix = score_matrix * EU_weight
+        score_matrix_sum = score_matrix.sum(axis=1)
+        measure_score_dict[measure] = dict(score_matrix_sum)
         data = pd.concat([data, score_matrix], axis=0)
+
     data = data.T
     columns = data.columns
     grouped_columns = data.groupby(columns, axis=1)
@@ -205,6 +212,43 @@ def bootstrap_sum(model, mode, measures, weight=None, bootstrap_rounds=1000):
     groups = grouped_data.columns
     length = len(groups)
 
+    #####
+    sum_scores = {}
+    for measure in measures:
+        measure_sum_score = pd.Series(measure_score_dict[measure])
+        for group in groups:
+            if group not in sum_scores:
+                sum_scores[group] = 0
+            sum_scores[group] += measure_sum_score[group]
+    sum_scores = dict(
+        sorted(sum_scores.items(), key=lambda x: x[1], reverse=True))
+
+    groups = list(sum_scores.keys())
+    groups_plt = [group[2:] for group in groups]
+
+    plt.figure(figsize=(30, 15))
+    bottom = [0 for i in range(length)]
+    for key in measure_score_dict:
+        measure_points = measure_score_dict[key]
+        points = [measure_points[group] for group in groups]
+        plt.bar(groups_plt, points, bottom=bottom, label=key, width=0.8)
+        bottom = [bottom[i] + points[i] for i in range(length)]
+    plt.xticks(np.arange(length), groups, rotation=45, fontsize=10, ha='right')
+    plt.yticks(fontsize=10)
+    plt.legend(fontsize=10)
+    if equal_weight:
+        plt.title(
+            f"Bootstrap result of t-test points for {measure_type} EUs with equal weight", fontsize=18)
+        plt.savefig(output_path +
+                    f"sum_points_{measure_type}_{model}_{mode}_equal_weight.png",
+                    dpi=300)
+    else:
+        plt.title(
+            f"Bootstrap result of t-test points for {measure_type} EUs with custom weight", fontsize=18)
+        plt.savefig(output_path +
+                    f"sum_points_{measure_type}_{model}_{mode}_custom_weight.png",
+                    dpi=300)
+    #####
     # use the above code to get a initial ranking of the groups.
     # then generate new groups list using the ranking
     # then do bootstrapping
@@ -215,8 +259,8 @@ def bootstrap_sum(model, mode, measures, weight=None, bootstrap_rounds=1000):
     scores = dict(sum)
     scores = dict(sorted(scores.items(), key=lambda x: x[1], reverse=True))
 
-    with open("./bootstrap_EU/{}_{}_{}_n={}_sum_equal_weight_{}.txt".format(measure_type, model, mode,  bootstrap_rounds, equal_weight
-                                                                            ), 'w') as f:
+    with open(output_path + "{}_{}_{}_n={}_equal_weight={}_ranking_sum.txt".format(
+            measure_type, model, mode,  bootstrap_rounds, equal_weight), 'w') as f:
         f.write(str(scores))
     groups = list(scores.keys())
     length = len(groups)
@@ -259,15 +303,15 @@ def bootstrap_sum(model, mode, measures, weight=None, bootstrap_rounds=1000):
         spine.set_linewidth(2)
     ax.set_xticklabels(ax.get_xticklabels(), horizontalalignment='center')
     ax.set_yticklabels(ax.get_yticklabels(), verticalalignment='center')
-    plt.xticks(np.arange(length), groups, rotation=45, fontsize=10)
+    plt.xticks(np.arange(length), groups, rotation=45, fontsize=10, ha='right')
     plt.yticks(np.arange(length), groups, rotation=0, fontsize=10)
-    plt.title("Bootstrap result of {} score for {} {} targets".format(
-        measure_type, model, mode), fontsize=25)
-    plt.savefig(
-        "./bootstrap_EU/win_matrix_bootstrap_{}_{}_{}_n={}_sum_equal_weight_{}.png".format(measure_type, model, mode, bootstrap_rounds,  equal_weight), dpi=300)
+    plt.title(
+        "{} bootstrap result of summ points for {} EUs".format(measure_type, mode), fontsize=20)
+    plt.savefig(output_path +
+                "win_matrix_{}_{}_{}_n={}_sum_equal_weight={}_bootstrap_sum.png".format(measure_type, model, mode, bootstrap_rounds,  equal_weight), dpi=300)
     # save the win matrix as a numpy array
 
-    np.save("./bootstrap_EU/win_matrix_bootstrap_{}_{}_{}_n={}_sum_equal_weight_{}.npy".format(
+    np.save(output_path + "win_matrix_{}_{}_{}_n={}_sum_equal_weight={}_bootstrap_sum.npy".format(
         measure_type, model, mode, bootstrap_rounds, equal_weight), win_matrix)
 
 
@@ -275,5 +319,6 @@ def bootstrap_sum(model, mode, measures, weight=None, bootstrap_rounds=1000):
 weights = [1/16, 1/16, 1/16,
            1/12, 1/12,
            1/4, 1/4, 1/4]
-bootstrap_sum(model, mode, measures="CASP15",
-              weight=weights, bootstrap_rounds=1000)
+bootstrap_sum("CASP16", model, mode,
+              score_path, output_path="./bootstrap_EU/",
+              weight=None, bootstrap_rounds=bootstrap_rounds)

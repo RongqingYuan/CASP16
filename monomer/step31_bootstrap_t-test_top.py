@@ -8,15 +8,12 @@ import sys
 import os
 import json
 
-
 score_path = "./group_by_target/"
 file_path = "./bootstrap/"
 score_path = "./group_by_target_EU/"
 file_path = "./bootstrap_EU/"
 out_path = "./bootstrap_analysis_EU/"
-# measure = sys.argv[1]
 measure = "GDT_TS"
-
 
 measure = "GDT_HA"
 # measure = "GDC_SC"
@@ -24,27 +21,24 @@ measure = "GDT_HA"
 # measure = "SphGr"
 # measure = "CAD_AA"
 # measure = "QSE"
-# measure = "MolPrb_Score"
+measure = "MolPrb_Score"
 # measure = "reLLG_const"
 
-
+measure_type = "CASP16"
+equal_weight = True
 mode = "hard"
 mode = "medium"
 mode = "easy"
 mode = "all"
 model = "first"
 model = "best"
-bootstrap_rounds = 1000
-measure_type = "CASP16"
-equal_weight = True
-# measure_type = "CASP15"
-# equal_weight = False
+p_value_threshold = 0.05
+bootstrap_rounds = 100
 measures = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
             'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
             'SphGr',
             'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
             'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
-
 
 hard_group = [
     "T1207-D1",
@@ -145,27 +139,25 @@ easy_group = [
     # "T1214",
 ]
 
-
-dict_file = "{}_{}_{}_n={}_equal_weight={}_ranking_sum.txt".format(
-    measure_type, model, mode,  bootstrap_rounds, equal_weight)
+dict_file = f"{measure_type}_{model}_{mode}_p={p_value_threshold}_ranking_t_test.txt"
 dict_obj = None
 
 with open(file_path + dict_file, "r") as f:
     for line in f:
         line = line.strip()
         dict_obj = eval(line)
-
-win_matrix_file = "win_matrix_{}_{}_{}_n={}_sum_equal_weight={}_bootstrap_sum.npy".format(
-    measure_type, model, mode, bootstrap_rounds, equal_weight)
+win_matrix_file = f"win_matrix_{measure_type}_{model}_{mode}_p={p_value_threshold}_n={bootstrap_rounds}_equal_weight={equal_weight}_bootstrap_t_test.npy"
 win_matrix = np.load(file_path + win_matrix_file)
-
+# breakpoint()
 
 top_n = 25
 top_n_id = list(dict_obj.keys())[:top_n]
-top_n_id = [i.replace("TS", "") for i in top_n_id]
 win_matrix_top_n = win_matrix[:top_n, :top_n]
+
+# divide win_matrix_top_n by bootstrap_rounds
 win_matrix_top_n = win_matrix_top_n / bootstrap_rounds
-plt.figure(figsize=(24, 18))
+# plot the win_matrix_top_n
+plt.figure(figsize=(20, 15))
 ax = sns.heatmap(win_matrix_top_n, annot=True, fmt=".2f",
                  cmap='Greys', cbar=True, square=True,
                  #  linewidths=1, linecolor='black',
@@ -188,10 +180,13 @@ ax.set_yticklabels(ax.get_yticklabels(), verticalalignment='center')
 plt.xticks(np.arange(top_n), top_n_id, rotation=45, fontsize=10)
 plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=10)
 if equal_weight:
-    plt.title("Bootstrap result of {} score for {} top {} groups, with equal weight".format(
-        measure_type, mode, top_n), fontsize=20)
+    plt.title("{} t-test bootstrap result for {} EUs top {} groups with equal weight".format(
+        measure_type, mode, top_n), fontsize=15)
 else:
-    plt.title("Bootstrap result of {} score for {} top {} groups".format(
-        measure_type, mode, top_n), fontsize=20)
-plt.savefig(out_path + "win_matrix_{}_{}_{}_n={}_sum_equal_weight={}_top_{}_bootstrap_sum.png".format(
-    measure_type, model, mode, bootstrap_rounds, equal_weight, top_n), dpi=300)
+    plt.title("{} t-test bootstrap result for {} EUs top {} groups with custom weight".format(
+        measure_type, mode, top_n), fontsize=15)
+
+# fill each cell with the bootstrap value
+
+plt.savefig(
+    out_path + f"win_matrix_{measure_type}_{model}_{mode}_p={p_value_threshold}_n={bootstrap_rounds}_equal_weight={equal_weight}_top_{top_n}_bootstrap_t_test.png")
