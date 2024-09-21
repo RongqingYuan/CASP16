@@ -21,7 +21,6 @@ hard_group = [
     "T1271s3-D1",
     "T1271s8-D1",
 ]
-
 medium_group = [
     "T1210-D3",
     "T1212-D1",
@@ -68,7 +67,6 @@ medium_group = [
     "T1298-D1",
     "T1298-D2",
 ]
-
 easy_group = [
     "T1201-D1",
     "T1201-D2",
@@ -259,25 +257,94 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
                 + "sum_baseline_{}-{}-{}.csv".format(feature, model, mode))
 
     # get the lowest value in the data_raw, and impute nan with the lowest value
-    data_raw = data_raw.fillna(data_raw.min().min())
+    # data_raw = data_raw.fillna(data_raw.min().min())
     data_raw = data_raw.reindex(sorted(data_raw.columns), axis=1)
     data_raw["sum"] = data_raw.sum(axis=1)
     data_raw = data_raw.sort_values(by="sum", ascending=False)
     data_raw.to_csv(sum_path
                     + "sum_raw_unweighted_baseline_{}-{}-{}.csv".format(feature, model, mode))
     data_raw.drop(columns=["sum"], inplace=True)
-    data_raw = data_raw * pd.Series(EU_weight)
-    data_raw["sum"] = data_raw.sum(axis=1)
-    data_raw = data_raw.sort_values(by="sum", ascending=False)
-    data_raw.to_csv(sum_path
-                    + "sum_raw_baseline_{}-{}-{}.csv".format(feature, model, mode))
+    data_raw_weighted = data_raw * pd.Series(EU_weight)
+    data_raw_weighted["sum"] = data_raw_weighted.sum(axis=1)
+    data_raw_weighted = data_raw_weighted.sort_values(
+        by="sum", ascending=False)
+    data_raw_weighted.to_csv(sum_path
+                             + "sum_raw_baseline_{}-{}-{}.csv".format(feature, model, mode))
     # breakpoint()
     return data, data_raw
 
 
 data, data_raw = get_group_by_target(
     csv_list, csv_path, feature, model, mode)
+###############
+# print the nan rate of the data in columns and rows
+print(data_raw.isna().sum(axis=0)/data.shape[0])
+print(data_raw.isna().sum(axis=1)/data.shape[1])
+# remove rows with more than 50% nan values
+data_raw = data_raw[data_raw.isna().sum(axis=1) < 0.5 * data_raw.shape[1]]
+print(data_raw.isna().sum(axis=0)/data.shape[0])
+print(data_raw.isna().sum(axis=1)/data.shape[1])
+# for each row, get its non-nan values in intersection with "TS145", and calculate the sum of the non-nan values
+# then divide the sum of the non-nan values by the sum of "TS145" to get the normalized sum
+# then plot the normalized sum
+data_raw = data_raw.T
 
+groups = data_raw.columns
+baseline_group = pd.DataFrame(data_raw["TS446"])
+baseline_dict = {}
+for group in groups:
+    data_raw_group = pd.DataFrame(data_raw[group])
+    # get the intersection of non nan values in data_raw_group and baseline_group
+    non_nan_baseline = baseline_group[pd.notna(baseline_group["TS446"])].index
+    non_nan_group = data_raw_group[pd.notna(data_raw_group[group])].index
+    # 计算两者的交集
+    intersection_index = non_nan_baseline.intersection(non_nan_group)
+    # 根据 intersection_index 获取对应的值
+    baseline_values = baseline_group.loc[intersection_index, "TS446"]
+    group_values = data_raw_group.loc[intersection_index, group]
+
+    # sum them up
+    sum_baseline = baseline_values.sum()
+    sum_group = group_values.sum()
+    ratio = sum_group / sum_baseline
+    baseline_dict[group] = ratio
+    # # 输出结果或进行进一步操作
+    # print(
+    #     f"Group {group} has {len(intersection_index)} intersecting non-NaN values.")
+    # print("Baseline values:", baseline_values.values)
+    # print(f"{group} values:", group_values.values)
+
+# sort the baseline_dict by its values
+baseline_dict = dict(sorted(baseline_dict.items(),
+                     key=lambda x: x[1], reverse=True))
+groups = [key[2:] for key in baseline_dict.keys()]
+values = list(baseline_dict.values())
+plt.figure(figsize=(30, 15))
+highlight_group = "446"
+bar_colors = ['C0' if group != highlight_group else 'C1' for group in groups]
+plt.bar(groups, values, color=bar_colors)
+plt.xticks(rotation=45, fontsize=12, ha='right')
+plt.title(
+    "sum of {} for {} model in {} targets, compared with baseline (group {}) in CASP15".format(feature, model, mode, highlight_group), fontsize=15)
+plt.ylabel("sum of {}".format(feature))
+plt.axhline(y=1, color='k')
+# there is one group 145, we need to write something on top of its bar
+for group, value in zip(groups, values):
+    # breakpoint()
+    if group == highlight_group:
+        # breakpoint()
+        plt.text(group, value + 0.02, str("ColabFold"),
+                 ha='center', fontsize=10, color='C1')
+# first 5 groups
+first_5_groups = groups[:5]
+first_5_values = values[:5]
+for group, value in zip(first_5_groups, first_5_values):
+    plt.text(group, value + 0.01, str(value.round(2)),
+             ha='center', fontsize=7, color='C0')
+plt.savefig(
+    sum_path + "sum_intersect_{}-{}-{}_with_colabfold_baseline.png".format(feature, model, mode), dpi=300)
+###############
+breakpoint()
 # for feature in features:
 #     get_group_by_target(csv_list, csv_path, feature, model, mode)
 #     print("Finished processing {}".format(feature))
