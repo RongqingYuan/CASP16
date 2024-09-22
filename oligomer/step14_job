@@ -1,0 +1,16 @@
+#!/bin/bash
+#SBATCH -p 256GB
+#SBATCH -n 48
+# #SBATCH --gres=gpu:1
+#SBATCH --mem=192g
+#SBATCH -t 28-00:00:00
+#SBATCH -o step14_bootstrap_t_test_1.log
+#SBATCH -e step14_bootstrap_t_test_1.err
+#SBATCH -J step14_bootstrap_t_test
+
+
+# job goes like python step18_bootstrap_new.py GDT_TS
+# all measures are: ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P','AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT','CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash','CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',            'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
+# measures = (GDT_TS, GDT_HA, GDC_SC, 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P','AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT','CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash','CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash', 'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const')
+
+python -u step14_bootstrap_t-test_new.py
