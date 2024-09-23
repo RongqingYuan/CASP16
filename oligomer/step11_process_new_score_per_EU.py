@@ -3,15 +3,8 @@ import os
 import pandas as pd
 import numpy as np
 
-results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/"
-result_files = [result for result in os.listdir(
-    results_dir) if result.endswith(".results")]
-out_dir = "./group_by_target_EU_new/"
-model = "best"
-mode = "all"
 
-
-def group_by_target(results_dir, result_files, out_dir, feature, model, mode):
+def group_by_target(results_dir, result_files, out_dir, feature, model, mode, impute_value):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     data = pd.DataFrame()
@@ -45,8 +38,9 @@ def group_by_target(results_dir, result_files, out_dir, feature, model, mode):
         new_mean = filtered_data.mean(skipna=True)
         new_std = filtered_data.std(skipna=True)
         new_z_score[feature] = (grouped[feature] - new_mean) / new_std
-        new_z_score = new_z_score.fillna(-2.0)
-        new_z_score = new_z_score.where(new_z_score > -2, -2)
+        new_z_score = new_z_score.fillna(impute_value)
+        new_z_score = new_z_score.where(
+            new_z_score > impute_value, impute_value)
         new_z_score = new_z_score.rename(
             columns={feature: result_file.split(".")[0]})
         data = pd.concat([data, new_z_score], axis=1)
@@ -54,25 +48,59 @@ def group_by_target(results_dir, result_files, out_dir, feature, model, mode):
             columns={feature: result_file.split(".")[0]})
         data_raw = pd.concat([data_raw, grouped], axis=1)
 
-    data = data.fillna(-2.0)
-    data.to_csv(out_dir +
-                "group_by_target-{}-{}-{}.csv".format(feature, model, mode))
+    data = data.fillna(impute_value)
+    data_file = f"group_by_target-{feature}-{model}-{mode}-impute_value={impute_value}.csv"
+    data.to_csv(out_dir + data_file)
 
-    data_raw.to_csv(out_dir +
-                    "group_by_target_raw-{}-{}-{}.csv".format(feature, model, mode))
+    data_raw_file = f"group_by_target_raw-{feature}-{model}-{mode}-impute_value={impute_value}.csv"
+    data_raw.to_csv(out_dir + data_raw_file)
 
     data["sum"] = data.sum(axis=1)
     data = data.sort_values(by="sum", ascending=False)
-    data.to_csv(out_dir + "sum_{}-{}-{}.csv".format(feature, model, mode))
+    sum_data_file = f"sum_{feature}-{model}-{mode}-impute_value={impute_value}.csv"
+    data.to_csv(out_dir + sum_data_file)
 
 
-group_by_target(results_dir, result_files, out_dir, "qs_global", model, mode)
-group_by_target(results_dir, result_files, out_dir, "qs_best", model, mode)
-group_by_target(results_dir, result_files, out_dir, "ics", model, mode)
-group_by_target(results_dir, result_files, out_dir, "ips", model, mode)
-group_by_target(results_dir, result_files, out_dir, "dockq_ave", model, mode)
-group_by_target(results_dir, result_files, out_dir, "tm_score", model, mode)
-group_by_target(results_dir, result_files, out_dir, "lddt", model, mode)
+results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/"
+result_files = [result for result in os.listdir(
+    results_dir) if result.endswith(".results")]
+removed_targets = ["T1219",
+                   "T1269",
+                   "H1265",
+                   "T1295",
+                   "T1249"
+                   ]
+
+to_remove = []
+for result_file in result_files:
+    for removed_target in removed_targets:
+        if result_file.startswith(removed_target):
+            to_remove.append(result_file)
+            break
+for remove in to_remove:
+    result_files.remove(remove)
+result_files = sorted(result_files)
+print(result_files)
+print(result_files.__len__())
+out_dir = "./group_by_target_EU_new/"
+model = "best"
+mode = "all"
+impute_value = 0
+
+group_by_target(results_dir, result_files, out_dir,
+                "qs_global", model, mode, impute_value)
+group_by_target(results_dir, result_files, out_dir,
+                "qs_best", model, mode, impute_value)
+group_by_target(results_dir, result_files, out_dir,
+                "ics", model, mode, impute_value)
+group_by_target(results_dir, result_files, out_dir,
+                "ips", model, mode, impute_value)
+group_by_target(results_dir, result_files, out_dir,
+                "dockq_ave", model, mode, impute_value)
+group_by_target(results_dir, result_files, out_dir,
+                "tm_score", model, mode, impute_value)
+group_by_target(results_dir, result_files, out_dir,
+                "lddt", model, mode, impute_value)
 sys.exit(0)
 
 
