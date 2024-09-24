@@ -5,7 +5,6 @@ import os
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-
 # hard_group = [
 
 # ]
@@ -119,6 +118,23 @@ def bootstrap_sum(measures, model, mode,
     #              for EU in data_columns}
     # EU_weight = pd.Series(EU_weight)
 
+    measure = measures[0]
+    score_file = f"group_by_target-{measure}-{model}-{mode}-impute_value={impute_value}.csv"
+    data_tmp = pd.read_csv(interface_score_path + score_file, index_col=0)
+    data_columns = data_tmp.columns
+
+    interface_count = {}
+    for EU in data_columns:
+        target = EU.split("_")[0]
+        if target not in interface_count:
+            interface_count[target] = 0
+        interface_count[target] += 1
+    target_weight = {key: 1/(value ** (2/3))
+                     for key, value in interface_count.items()}
+    interface_weight = {EU: target_weight[EU.split("_")[0]]
+                        for EU in data_columns}
+    interface_weight = pd.Series(interface_weight)
+    breakpoint()
     data = pd.DataFrame()
     measure_score_dict = {}
     for i in range(len(measures)):
@@ -144,7 +160,7 @@ def bootstrap_sum(measures, model, mode,
             weight_i = weight[i]
             # multiply the score_matrix by the weight
             score_matrix = score_matrix * weight_i
-            # score_matrix = score_matrix * EU_weight
+            score_matrix = score_matrix * interface_weight
             score_matrix_sum = score_matrix.sum(axis=1)
             measure_score_dict[measure] = dict(score_matrix_sum)
 
@@ -294,7 +310,7 @@ else:
                1/12, 1/12,
                1/4, 1/4, 1/4]
 bootstrap_rounds = 1000
-impute_value = 0
+impute_value = -2
 
 bootstrap_sum(measures, model, mode,
               interface_score_path, EU_score_path, output_path=output_path,

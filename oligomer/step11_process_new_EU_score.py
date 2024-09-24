@@ -85,7 +85,7 @@ print(result_files.__len__())
 out_dir = "./group_by_target_EU_new/"
 model = "best"
 mode = "all"
-impute_value = 0
+impute_value = -2
 
 group_by_target(results_dir, result_files, out_dir,
                 "qs_global", model, mode, impute_value)
