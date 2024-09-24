@@ -8,6 +8,8 @@ import time
 monomer_path = "/home2/s439906/data/CASP16/monomers/"
 monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_8/"
 monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_10/"
+monomer_path = "/home2/s439906/data/CASP16/monomers_EU_merge_v/"
+
 
 monomer_list = [txt for txt in os.listdir(
     monomer_path) if txt.endswith(".txt")]
@@ -28,13 +30,35 @@ monomer_list = [txt for txt in os.listdir(
 # monomer_data_all_path = "./monomer_data_sep_8/processed/all/"
 
 
-monomer_data_raw_EU_path = "./monomer_data_Sep_10/raw_data/EU/"
-monomer_data_raw_whole_path = "./monomer_data_Sep_10/raw_data/whole/"
-monomer_data_raw_all_path = "./monomer_data_Sep_10/raw_data/all/"
+# monomer_data_raw_EU_path = "./monomer_data_Sep_15_EU/raw_data/EU/"
+# monomer_data_raw_whole_path = "./monomer_data_Sep_15_EU/raw_data/whole/"
+# monomer_data_raw_all_path = "./monomer_data_Sep_15_EU/raw_data/all/"
 
-monomer_data_EU_path = "./monomer_data_Sep_10/processed/EU/"
-monomer_data_whole_path = "./monomer_data_Sep_10/processed/whole/"
-monomer_data_all_path = "./monomer_data_Sep_10/processed/all/"
+# monomer_data_EU_path = "./monomer_data_Sep_15_EU/processed/EU/"
+# monomer_data_whole_path = "./monomer_data_Sep_15_EU/processed/whole/"
+# monomer_data_all_path = "./monomer_data_Sep_15_EU/processed/all/"
+
+
+# if not os.path.exists(monomer_data_raw_EU_path):
+#     os.makedirs(monomer_data_raw_EU_path)
+# if not os.path.exists(monomer_data_raw_whole_path):
+#     os.makedirs(monomer_data_raw_whole_path)
+# if not os.path.exists(monomer_data_raw_all_path):
+#     os.makedirs(monomer_data_raw_all_path)
+# if not os.path.exists(monomer_data_EU_path):
+#     os.makedirs(monomer_data_EU_path)
+# if not os.path.exists(monomer_data_whole_path):
+#     os.makedirs(monomer_data_whole_path)
+# if not os.path.exists(monomer_data_all_path):
+#     os.makedirs(monomer_data_all_path)
+
+monomer_data_EU_path = "./monomer_data_Sep_15_EU/processed/"
+monomer_data_raw_EU_path = "./monomer_data_Sep_15_EU/raw_data/"
+
+if not os.path.exists(monomer_data_EU_path):
+    os.makedirs(monomer_data_EU_path)
+if not os.path.exists(monomer_data_raw_EU_path):
+    os.makedirs(monomer_data_raw_EU_path)
 
 
 evaluation_unit = []
@@ -54,22 +78,8 @@ for file_name in monomer_list:
     else:
         whole_structure.append(file_name)
 
-print("evaluation unit: ", evaluation_unit)
-print("whole structure: ", whole_structure)
-
-
-if not os.path.exists(monomer_data_raw_EU_path):
-    os.makedirs(monomer_data_raw_EU_path)
-if not os.path.exists(monomer_data_raw_whole_path):
-    os.makedirs(monomer_data_raw_whole_path)
-if not os.path.exists(monomer_data_raw_all_path):
-    os.makedirs(monomer_data_raw_all_path)
-if not os.path.exists(monomer_data_EU_path):
-    os.makedirs(monomer_data_EU_path)
-if not os.path.exists(monomer_data_whole_path):
-    os.makedirs(monomer_data_whole_path)
-if not os.path.exists(monomer_data_all_path):
-    os.makedirs(monomer_data_all_path)
+# print("evaluation unit: ", evaluation_unit)
+# print("whole structure: ", whole_structure)
 
 csv_tmp_path = "./csv_tmp/"
 if not os.path.exists(csv_tmp_path):
@@ -105,14 +115,19 @@ for monomer in monomer_list:
         domain_id = monomer.split(".")[0].split("-")[1]
         data.index = data.index.map(
             lambda x: x + "-" + domain_id if "-D" not in x else x)
-    # breakpoint()
+    elif "-D" not in monomer:
+        domain_id = "D0"  # temporary solution
+        data.index = data.index.map(
+            lambda x: x + "-" + domain_id if "-D" not in x else x)
 
-    # save it as complete raw data, in case we need it later
-    data.to_csv(monomer_data_raw_all_path + monomer[:-4] + ".csv")
-    if monomer in evaluation_unit:
-        data.to_csv(monomer_data_raw_EU_path + monomer[:-4] + ".csv")
-    if monomer in whole_structure:
-        data.to_csv(monomer_data_raw_whole_path + monomer[:-4] + ".csv")
+    data.to_csv(monomer_data_raw_EU_path + monomer[:-4] + ".csv")
+
+    # # save it as complete raw data, in case we need it later
+    # data.to_csv(monomer_data_raw_all_path + monomer[:-4] + ".csv")
+    # if monomer in evaluation_unit:
+    #     data.to_csv(monomer_data_raw_EU_path + monomer[:-4] + ".csv")
+    # if monomer in whole_structure:
+    #     data.to_csv(monomer_data_raw_whole_path + monomer[:-4] + ".csv")
 
     # remove the "GR#" column and "#" column
     data = data.drop(["GR#", "#"], axis=1)
@@ -220,17 +235,18 @@ for monomer in monomer_list:
     # print(data.head())
     # save the normalized data to csv file
     # data.to_csv(csv_path + monomer[:-4] + ".csv")
-    data.to_csv(monomer_data_all_path + monomer[:-4] + ".csv")
-    if monomer in evaluation_unit:
-        data.to_csv(monomer_data_EU_path + monomer[:-4] + ".csv")
-    if monomer in whole_structure:
-        data.to_csv(monomer_data_whole_path + monomer[:-4] + ".csv")
 
-    new_z_score.to_csv(monomer_data_all_path + monomer[:-4] + ".csv")
-    if monomer in evaluation_unit:
-        new_z_score.to_csv(monomer_data_EU_path + monomer[:-4] + ".csv")
-    if monomer in whole_structure:
-        new_z_score.to_csv(monomer_data_whole_path + monomer[:-4] + ".csv")
+    # data.to_csv(monomer_data_all_path + monomer[:-4] + ".csv")
+    # if monomer in evaluation_unit:
+    #     data.to_csv(monomer_data_EU_path + monomer[:-4] + ".csv")
+    # if monomer in whole_structure:
+    #     data.to_csv(monomer_data_whole_path + monomer[:-4] + ".csv")
+
+    new_z_score.to_csv(monomer_data_EU_path + monomer[:-4] + ".csv")
+    # if monomer in evaluation_unit:
+    #     new_z_score.to_csv(monomer_data_EU_path + monomer[:-4] + ".csv")
+    # if monomer in whole_structure:
+    #     new_z_score.to_csv(monomer_data_whole_path + monomer[:-4] + ".csv")
     # else:
     #     print("Error when saving the data: ", monomer)
     #     sys.exit()
