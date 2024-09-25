@@ -200,15 +200,15 @@ def bootstrap_sum(measures, model, mode,
     plt.xticks(np.arange(length), groups_plt,
                rotation=90, fontsize=24, ha='right')
     plt.yticks(fontsize=24)
-    plt.legend(fontsize=24)
+    plt.legend(fontsize=32)
     if equal_weight:
         plt.title(
-            f"z-score sum for {measure_type} EUs with equal weight", fontsize=30)
+            f"z-score sum for {measure_type} oligomer EUs with equal weight", fontsize=32)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_equal_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
     else:
         plt.title(
-            f"z-score sum for {measure_type} EUs with custom weight", fontsize=30)
+            f"z-score sum for {measure_type} oligomer EUs with custom weight", fontsize=32)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
     # breakpoint()
@@ -270,10 +270,10 @@ def bootstrap_sum(measures, model, mode,
         spine.set_linewidth(2)
     ax.set_xticklabels(ax.get_xticklabels(), horizontalalignment='center')
     ax.set_yticklabels(ax.get_yticklabels(), verticalalignment='center')
-    plt.xticks(np.arange(length), groups, rotation=45, fontsize=10, ha='right')
+    plt.xticks(np.arange(length), groups, rotation=45, fontsize=10)
     plt.yticks(np.arange(length), groups, rotation=0, fontsize=10)
     plt.title(
-        "{} bootstrap result of summ points for {} EUs".format(measure_type, mode), fontsize=20)
+        "{} bootstrap result of sum points for {} EUs".format(measure_type, mode), fontsize=20)
     png_file = f"win_matrix_{measure_type}_{model}_{mode}_n={bootstrap_rounds}_equal_weight={equal_weight}_impute={impute_value}_bootstrap_sum.png"
     plt.savefig(output_path + png_file, dpi=300)
 
@@ -314,13 +314,14 @@ def bootstrap_sum(measures, model, mode,
         spine.set_linewidth(2)
     ax.set_xticklabels(ax.get_xticklabels(), horizontalalignment='center')
     ax.set_yticklabels(ax.get_yticklabels(), verticalalignment='center')
-    plt.xticks(np.arange(top_n), top_n_id, rotation=45, fontsize=12)
+    plt.xticks(np.arange(top_n), top_n_id,
+               rotation=45, fontsize=12, ha='right')
     plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=12)
     if equal_weight:
-        plt.title("Bootstrap result of {} score for {} top {} groups, with equal weight".format(
+        plt.title("bootstrap result of {} score for {} top {} groups, with equal weight".format(
             measure_type, mode, top_n), fontsize=18)
     else:
-        plt.title("Bootstrap result of {} score for {} top {} groups".format(
+        plt.title("bootstrap result of {} score for {} top {} groups".format(
             measure_type, mode, top_n), fontsize=18)
     png_top_file = f"win_matrix_{measure_type}_{model}_{mode}_n={bootstrap_rounds}_equal_weight={equal_weight}_impute={impute_value}_top_{top_n}_bootstrap_sum.png"
     plt.savefig(output_path + png_top_file, dpi=300)
