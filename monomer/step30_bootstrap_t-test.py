@@ -1,3 +1,5 @@
+import argparse
+import os
 import seaborn as sns
 import scipy.stats as stats
 import pandas as pd
@@ -7,25 +9,253 @@ from scipy import stats
 import sys
 
 
-score_path = "./group_by_target_EU/"
-measure = "RMSD[L]"
-measure = "RMS_CA"
-measure = "GDT_HA"
-measure = "GDT_TS"
-# measure = sys.argv[1]
+def bootstrap_t_test(measures, model, mode,
+                     score_path, output_path="./bootstrap_EU/",
+                     impute_value=-2, p_value_threshold=0.05, weight=None, bootstrap_rounds=1000, top_n=25):
+    # measure_type = "CASP16"
+    if isinstance(measures, str):
+        if measures == "CASP15":
+            measures = ['LDDT', 'CAD_AA', 'SphGr',
+                        'MP_clash', 'RMS_CA',
+                        'GDT_HA', 'QSE', 'reLLG_const']
+            measure_type = "CASP15"
+        elif measures == "CASP16":
+            measures = ['GDT_HA', 'GDC_SC', 'AL0_P', 'SphGr',
+                        'CAD_AA', 'QSE', 'MolPrb_Score', 'reLLG_const']
+            measure_type = "CASP16"
+        else:
+            print("measures should be a list of strings, or 'CASP15' / 'CASP16'")
+            return 1
+    else:
+        measure_type = "custom"
+    try:
+        measures = list(measures)
+    except:
+        raise ValueError("measures must be iterable")
+    if weight is None:
+        weight = [1/len(measures)] * len(measures)
+    equal_weight = len(set(weight)) == 1
+    assert len(measures) == len(weight)
+    score_path = score_path + f"impute={impute_value}/"
+    T1_data = pd.DataFrame()
+    groups = None
+    for i in range(len(measures)):
+        measure = measures[i]
+        score_file = f"group_by_target-{measure}-{model}-{mode}.csv"
+        score_matrix = pd.read_csv(score_path + score_file, index_col=0)
+        score_matrix = score_matrix.filter(regex='T1')
+        score_matrix = score_matrix.reindex(
+            sorted(score_matrix.columns), axis=1)
+        score_matrix = score_matrix.T
+        score_matrix.columns = score_matrix.columns.str.replace(
+            "TS", "")
+        # rename each column to include the measure name
+        groups = score_matrix.columns
+        score_matrix.columns = [
+            f"{col}-{measure}" for col in score_matrix.columns]
+        T1_data = pd.concat([T1_data, score_matrix], axis=1)
+    missing_values = T1_data.isnull().sum().sum()
+    if missing_values > 0:
+        raise ValueError(
+            "There are missing values in the T1_data, please fill them before running the bootstrap_t_test function")
+    # in this senario there just should not be any missing values
 
-mode = "hard"
-mode = "medium"
-mode = "easy"
-mode = "all"
-model = "first"
-model = "best"
+    if mode == "all":
+        pass
+    elif mode == "easy":
+        T1_data = T1_data[easy_group]
+    elif mode == "medium":
+        T1_data = T1_data[medium_group]
+    elif mode == "hard":
+        T1_data = T1_data[hard_group]
 
-measures = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
-            'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
-            'SphGr',
-            'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
-            'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
+    # # remove columns with more than 80% missing values
+    # T1_data = T1_data.loc[:, T1_data.isnull().mean() < 0.8]
+    if "raw" in score_file:
+        T1_data.fillna(50, inplace=True)
+    else:
+        T1_data.fillna(-2, inplace=True)
+    length = len(groups)
+    points = {}
+
+    measure_points_dict = {}
+    for measure in measures:
+        measure_points = {}
+        for i in range(length):
+            group_i = groups[i]
+            measure_points[group_i] = 0
+        for i in range(length):
+            for j in range(length):
+                group_1_id = groups[i]
+                group_2_id = groups[j]
+                if group_1_id == group_2_id:
+                    continue
+                group_1 = group_1_id + "-" + measure
+                group_2 = group_2_id + "-" + measure
+                group_1_data = T1_data[group_1]
+                group_2_data = T1_data[group_2]
+                t_stat, p_value = stats.ttest_rel(group_1_data, group_2_data)
+                if t_stat > 0 and p_value/2 < p_value_threshold:
+                    measure_points[group_1_id] += 1
+        measure_points_dict[measure] = measure_points
+        print(f"{measure} finished.")
+    for measure in measures:
+        measure_points = measure_points_dict[measure]
+        for group in measure_points:
+            if group not in points:
+                points[group] = 0
+            points[group] += measure_points[group] * \
+                weight[measures.index(measure)]
+    points = dict(sorted(points.items(), key=lambda x: x[1], reverse=True))
+    dict_file = f"{measure_type}_{model}_{mode}_p={p_value_threshold}_equal_weight={equal_weight}_impute={impute_value}_ranking_t_test.txt"
+    with open(output_path + dict_file, 'w') as f:
+        f.write(str(points))
+    # this is to get a re-ordered list of groups
+    groups = list(points.keys())
+    # can plot the points here
+    plt.figure(figsize=(48, 24))
+    bottom = [0 for i in range(length)]
+    for key in measure_points_dict:
+        points = []
+        measure_points = measure_points_dict[key]
+        for group in groups:
+            points.append(measure_points[group])
+        for i in range(length):
+            points[i] = points[i] * weight[measures.index(key)]
+        plt.bar(groups, points, bottom=bottom, label=key, width=0.8)
+        bottom = [bottom[i] + points[i] for i in range(length)]
+    plt.xticks(np.arange(length), groups, rotation=90, fontsize=24, ha='right')
+    plt.yticks(fontsize=24)
+    plt.legend(fontsize=24)
+    if equal_weight:
+        plt.title(
+            f"bootstrap result of t-test points for {measure_type} EUs with equal weight", fontsize=30)
+        score_png_file = f"t_test_points_{measure_type}_{model}_{mode}_p={p_value_threshold}_impute={impute_value}_equal_weight.png"
+        plt.savefig(output_path +
+                    score_png_file,
+                    dpi=300)
+    else:
+        plt.title(
+            f"weighted bootstrap result of t-test points for {measure_type} EUs", fontsize=30)
+        score_png_file = f"t_test_points_{measure_type}_{model}_{mode}_p={p_value_threshold}_impute={impute_value}_custom_weight.png"
+
+        plt.savefig(output_path + score_png_file,
+                    dpi=300)
+
+    points = {}
+    length = len(groups)
+    win_matrix = [[0 for i in range(length)] for j in range(length)]
+    # get the target list, it is the first element when split T1_data.index
+    targets = T1_data.index.map(lambda x: x.split("-")[0])
+    T1_data["target"] = targets
+    for r in range(bootstrap_rounds):
+        # T1_data_bootstrap = T1_data.sample(frac=1, replace=True)
+        # T1_data_bootstrap = T1_data.groupby('target', group_keys=False).apply(lambda x: x.sample(n=1))
+        grouped = T1_data.groupby('target')
+        T1_data_bootstrap = grouped.apply(lambda x: x.sample(
+            n=1)).sample(n=len(grouped), replace=True)
+        T1_data_bootstrap = T1_data_bootstrap.sort_index()
+        bootstrap_points = {}
+        for measure in measures:
+            measure_points = {}
+            for i in range(length):
+                group_i = groups[i]
+                measure_points[group_i] = 0
+            for i in range(length):
+                for j in range(length):
+                    group_1_id = groups[i]
+                    group_2_id = groups[j]
+                    if group_1_id == group_2_id:
+                        continue
+                    group_1 = group_1_id + "-" + measure
+                    group_2 = group_2_id + "-" + measure
+                    group_1_data = T1_data_bootstrap[group_1]
+                    group_2_data = T1_data_bootstrap[group_2]
+                    t_stat, p_value = stats.ttest_rel(
+                        group_1_data, group_2_data)
+                    if t_stat > 0 and p_value/2 < p_value_threshold:
+                        measure_points[group_1_id] += 1
+            measure_points_dict[measure] = measure_points
+        for measure in measures:
+            measure_points = measure_points_dict[measure]
+            for group in measure_points:
+                if group not in bootstrap_points:
+                    bootstrap_points[group] = 0
+                bootstrap_points[group] += measure_points[group] * \
+                    weight[measures.index(measure)]
+        for i in range(length):
+            for j in range(length):
+                if i == j:
+                    continue
+                if bootstrap_points[groups[i]] > bootstrap_points[groups[j]]:
+                    win_matrix[i][j] += 1
+
+        print("Round: {}".format(r))
+
+    plt.figure(figsize=(30, 25))
+    ax = sns.heatmap(win_matrix, annot=False,
+                     cmap='Greys', cbar=True, square=True, )
+    #  linewidths=1, linecolor='black')
+    for _, spine in ax.spines.items():
+        spine.set_visible(True)
+        spine.set_linewidth(2)
+    ax.set_xticklabels(ax.get_xticklabels(), horizontalalignment='center')
+    ax.set_yticklabels(ax.get_yticklabels(), verticalalignment='center')
+    plt.xticks(np.arange(length), groups, rotation=45, fontsize=10, ha='right')
+    plt.yticks(np.arange(length), groups, rotation=0, fontsize=10)
+    plt.title(
+        "{} bootstrap result of t-test points for {} EUs".format(measure_type, mode), fontsize=20)
+    png_file = f"win_matrix_{measure_type}_{model}_{mode}_p={p_value_threshold}_n={bootstrap_rounds}_equal_weight={equal_weight}_impute={impute_value}_bootstrap_t_test.png"
+    plt.savefig(output_path + png_file,
+                dpi=300)
+    npy_file = f"win_matrix_{measure_type}_{model}_{mode}_p={p_value_threshold}_n={bootstrap_rounds}_equal_weight={equal_weight}_impute={impute_value}_bootstrap_t_test.npy"
+    np.save(output_path + npy_file,
+            win_matrix)
+
+    top_n = 25
+    top_n_id = groups[:top_n]
+    win_matrix = np.array(win_matrix)
+    win_matrix_top_n = win_matrix[:top_n, :top_n]
+
+    win_matrix_top_n = win_matrix_top_n / bootstrap_rounds
+    plt.figure(figsize=(16, 12))
+    ax = sns.heatmap(win_matrix_top_n, annot=True, fmt=".2f",
+                     cmap='Greys', cbar=True, square=True,
+                     #  linewidths=1, linecolor='black',
+                     )
+
+    for text in ax.texts:
+        value = float(text.get_text())  # 获取注释的值
+        if value >= 0.95:
+            text.set_color('red')  # >0.95 的文字为红色
+        elif value < 0.95 and value >= 0.75:
+            text.set_color('white')  # 0.75-0.95 的文字为白色
+        else:
+            text.set_color('black')  # 其他文字为黑色
+    cbar = ax.collections[0].colorbar
+    cbar.set_ticks([0, float(1/4), float(1/2),
+                    float(3/4), 1])
+    cbar.set_ticklabels([0, float(1/4), float(1/2),
+                        float(3/4), 1])
+    cbar.ax.tick_params(labelsize=12)
+    for _, spine in ax.spines.items():
+        spine.set_visible(True)
+        spine.set_linewidth(2)
+    ax.set_xticklabels(ax.get_xticklabels(), horizontalalignment='center')
+    ax.set_yticklabels(ax.get_yticklabels(), verticalalignment='center')
+    plt.xticks(np.arange(top_n), top_n_id, rotation=45, fontsize=12)
+    plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=12)
+    if equal_weight:
+        plt.title("{} t-test bootstrap result for {} EUs top {} groups with equal weight".format(
+            measure_type, mode, top_n), fontsize=18)
+    else:
+        plt.title("{} t-test bootstrap result for {} EUs top {} groups with custom weight".format(
+            measure_type, mode, top_n), fontsize=18)
+
+    fig_file = f"win_matrix_{measure_type}_{model}_{mode}_p={p_value_threshold}_n={bootstrap_rounds}_equal_weight={equal_weight}_impute={impute_value}_top_{top_n}_bootstrap_t_test.png"
+    plt.savefig(output_path + fig_file, dpi=300)
+
+
 hard_group = [
     "T1207-D1",
     "T1210-D1",
@@ -139,296 +369,86 @@ easy_group = [
 # # T1_data_bootstrap = stratified_sample(T1_data, stratify_column='target', frac=1, replace=True)
 
 
-def bootstrap_t_test(measures, model, mode, score_path, output_path="./bootstrap_EU/", p_value_threshold=0.05, weight=None, bootstrap_rounds=1000):
-    measure_type = "CASP16"
-    try:
-        measures = list(measures)
-    except:
-        raise ValueError("measures must be iterable")
-    if weight is None:
-        weight = [1/len(measures)] * len(measures)
-    equal_weight = len(set(weight)) == 1
-    assert len(measures) == len(weight)
+# measure = "RMSD[L]"
+# measure = "RMS_CA"
+# measure = "GDT_HA"
+# measure = "GDT_TS"
 
-    T1_data = pd.DataFrame()
-    groups = None
-    for i in range(len(measures)):
-        measure = measures[i]
-        score_file = "group_by_target-{}-{}-{}.csv".format(
-            measure, model, mode)
-        score_matrix = pd.read_csv(score_path + score_file, index_col=0)
-        score_matrix = score_matrix.filter(regex='T1')
-        score_matrix = score_matrix.reindex(
-            sorted(score_matrix.columns), axis=1)
-        score_matrix = score_matrix.T
-        score_matrix.columns = score_matrix.columns.str.replace(
-            "TS", "")
-        # rename each column to include the measure name
-        groups = score_matrix.columns
-        score_matrix.columns = [
-            f"{col}-{measure}" for col in score_matrix.columns]
-        T1_data = pd.concat([T1_data, score_matrix], axis=1)
-    missing_values = T1_data.isnull().sum().sum()
-    if missing_values > 0:
-        raise ValueError(
-            "There are missing values in the T1_data, please fill them before running the bootstrap_t_test function")
-    # in this senario there just should not be any missing values
+# score_path = "./group_by_target_EU/"
+# mode = "hard"
+# mode = "medium"
+# mode = "easy"
+# mode = "all"
+# model = "first"
+# model = "best"
+# bootstrap_rounds = 1000
 
-    # T1_data_tmp = T1_data.copy()
-    # T1_data_tmp.fillna(0, inplace=True)
-    # sum = T1_data_tmp.sum(axis=1)
-    # T1_data_tmp['sum'] = sum
-    # T1_data_tmp = T1_data_tmp.sort_values(by='sum', ascending=False)
-
-    if mode == "all":
-        pass
-    elif mode == "easy":
-        T1_data = T1_data[easy_group]
-    elif mode == "medium":
-        T1_data = T1_data[medium_group]
-    elif mode == "hard":
-        T1_data = T1_data[hard_group]
-
-    # # remove columns with more than 80% missing values
-    # T1_data = T1_data.loc[:, T1_data.isnull().mean() < 0.8]
-    if "raw" in score_file:
-        T1_data.fillna(50, inplace=True)
-    else:
-        T1_data.fillna(-2, inplace=True)
-    length = len(groups)
-    points = {}
-
-    measure_points_dict = {}
-    for measure in measures:
-        measure_points = {}
-        for i in range(length):
-            group_i = groups[i]
-            measure_points[group_i] = 0
-        for i in range(length):
-            for j in range(length):
-                group_1_id = groups[i]
-                group_2_id = groups[j]
-                if group_1_id == group_2_id:
-                    continue
-                group_1 = group_1_id + "-" + measure
-                group_2 = group_2_id + "-" + measure
-                group_1_data = T1_data[group_1]
-                group_2_data = T1_data[group_2]
-                t_stat, p_value = stats.ttest_rel(group_1_data, group_2_data)
-                if t_stat > 0 and p_value/2 < p_value_threshold:
-                    measure_points[group_1_id] += 1
-        measure_points_dict[measure] = measure_points
-        print(f"{measure} finished.")
-    for measure in measures:
-        measure_points = measure_points_dict[measure]
-        for group in measure_points:
-            if group not in points:
-                points[group] = 0
-            points[group] += measure_points[group] * \
-                weight[measures.index(measure)]
-    points = dict(sorted(points.items(), key=lambda x: x[1], reverse=True))
-    with open(output_path + f"{measure_type}_{model}_{mode}_p={p_value_threshold}_equal_weight={equal_weight}_ranking_t_test.txt", 'w') as f:
-        f.write(str(points))
-    # this is to get a re-ordered list of groups
-    groups = list(points.keys())
-
-    # can plot the points here
-    plt.figure(figsize=(30, 15))
-    bottom = [0 for i in range(length)]
-    for key in measure_points_dict:
-        measure_points = measure_points_dict[key]
-        points = [measure_points[group] for group in groups]
-        plt.bar(groups, points, bottom=bottom, label=key, width=0.8)
-        bottom = [bottom[i] + points[i] for i in range(length)]
-    plt.xticks(np.arange(length), groups, rotation=45, fontsize=10, ha='right')
-    plt.yticks(fontsize=10)
-    plt.legend(fontsize=10)
-    if equal_weight:
-        plt.title(
-            f"Bootstrap result of t-test points for {measure_type} EUs with equal weight", fontsize=18)
-        plt.savefig(output_path +
-                    f"t_test_points_{measure_type}_{model}_{mode}_p={p_value_threshold}_equal_weight.png",
-                    dpi=300)
-    else:
-        plt.title(
-            f"Bootstrap result of t-test points for {measure_type} EUs with custom weight", fontsize=18)
-        plt.savefig(output_path +
-                    f"t_test_points_{measure_type}_{model}_{mode}_p={p_value_threshold}_custom_weight.png",
-                    dpi=300)
-    # use the above t-test code to get a initial ranking of the groups.
-    # then generate new groups list using the ranking
-    # then do bootstrapping
-
-    # breakpoint()
-    points = {}
-    length = len(groups)
-    win_matrix = [[0 for i in range(length)] for j in range(length)]
-    # get the target list, it is the first element when split T1_data.index
-    targets = T1_data.index.map(lambda x: x.split("-")[0])
-    T1_data["target"] = targets
-    # breakpoint()
-    for r in range(bootstrap_rounds):
-        # T1_data_bootstrap = T1_data.sample(frac=1, replace=True)
-        # T1_data_bootstrap = T1_data.groupby('target', group_keys=False).apply(lambda x: x.sample(n=1))
-        grouped = T1_data.groupby('target')
-        T1_data_bootstrap = grouped.apply(lambda x: x.sample(
-            n=1)).sample(n=len(grouped), replace=True)
-        # sort the T1_data_bootstrap rows by the index
-        # breakpoint()
-        T1_data_bootstrap = T1_data_bootstrap.sort_index()
-        # breakpoint()
-        bootstrap_points = {}
-        # for i in range(length):
-        #     group_i = groups[i]
-        #     bootstrap_points[group_i] = 0
-
-        for measure in measures:
-            measure_points = {}
-            for i in range(length):
-                group_i = groups[i]
-                measure_points[group_i] = 0
-            for i in range(length):
-                for j in range(length):
-                    group_1_id = groups[i]
-                    group_2_id = groups[j]
-                    if group_1_id == group_2_id:
-                        continue
-                    group_1 = group_1_id + "-" + measure
-                    group_2 = group_2_id + "-" + measure
-                    group_1_data = T1_data_bootstrap[group_1]
-                    group_2_data = T1_data_bootstrap[group_2]
-                    t_stat, p_value = stats.ttest_rel(
-                        group_1_data, group_2_data)
-                    if t_stat > 0 and p_value/2 < p_value_threshold:
-                        measure_points[group_1_id] += 1
-            measure_points_dict[measure] = measure_points
-            # print(f"{measure} finished.")
-        for measure in measures:
-            measure_points = measure_points_dict[measure]
-            for group in measure_points:
-                if group not in bootstrap_points:
-                    bootstrap_points[group] = 0
-                bootstrap_points[group] += measure_points[group] * \
-                    weight[measures.index(measure)]
-        for i in range(length):
-            for j in range(length):
-                if i == j:
-                    continue
-                if bootstrap_points[groups[i]] > bootstrap_points[groups[j]]:
-                    win_matrix[i][j] += 1
-
-        print("Round: {}".format(r))
-    # points = dict(sorted(points.items(), key=lambda x: x[1], reverse=True))
-    # print(points)
-    # plot the win matrix as heatmap using seaborn
-    # only the color should be plotted, do not show the numbers
-    plt.figure(figsize=(30, 25))
-    ax = sns.heatmap(win_matrix, annot=False,
-                     cmap='Greys', cbar=True, square=True, )
-    #  linewidths=1, linecolor='black')
-    for _, spine in ax.spines.items():
-        spine.set_visible(True)
-        spine.set_linewidth(2)
-    ax.set_xticklabels(ax.get_xticklabels(), horizontalalignment='center')
-    ax.set_yticklabels(ax.get_yticklabels(), verticalalignment='center')
-    plt.xticks(np.arange(length), groups, rotation=45, fontsize=10, ha='right')
-    plt.yticks(np.arange(length), groups, rotation=0, fontsize=10)
-    plt.title(
-        "{} bootstrap result of t-test points for {} EUs".format(measure_type, mode), fontsize=20)
-    plt.savefig(output_path +
-                f"win_matrix_{measure_type}_{model}_{mode}_p={p_value_threshold}_n={bootstrap_rounds}_equal_weight={equal_weight}_bootstrap_t_test.png",
-                dpi=300)
-
-    np.save(output_path +
-            f"win_matrix_{measure_type}_{model}_{mode}_p={p_value_threshold}_n={bootstrap_rounds}_equal_weight={equal_weight}_bootstrap_t_test.npy",
-            win_matrix)
+# measures = ['GDT_TS', 'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
+#             'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
+#             'SphGr',
+#             'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
+#             'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const']
 
 
-# # bootstrap_t_test(measure, model, mode, p_value_threshold=0.05)
-# bootstrap_t_test(measures, model, mode, score_path,
-#                  weight=None, bootstrap_rounds=1000)
-wanted_measures = ['LDDT', 'CAD_AA', 'SphGr',
+CASP15_measures = ['LDDT', 'CAD_AA', 'SphGr',
                    'MP_clash', 'RMS_CA',
                    'GDT_HA', 'QSE', 'reLLG_const']
 
-wanted_measures = ['GDT_HA', 'GDC_SC', 'AL0_P', 'SphGr',
+CASP16_measures = ['GDT_HA', 'GDC_SC', 'AL0_P', 'SphGr',
                    'CAD_AA', 'QSE', 'MolPrb_Score', 'reLLG_const']
-equal_weight = False
+impute_value = 0
 equal_weight = True
+equal_weight = False
 if equal_weight:
     weights = [1/8] * 8
 else:
-    weights = [1/16, 1/16, 1/16,
-               1/12, 1/12,
-               1/4, 1/4, 1/4]
+    # weights = [1/16, 1/16, 1/16,
+    #            1/12, 1/12,
+    #            1/4, 1/4, 1/4]
 
+    weight = [1/4, 1/8,
+              1/8, 1/8,
+              1/8,
+              1/8, 1/16,
+              1/4]
 
-bootstrap_t_test(wanted_measures, model, mode,
-                 score_path, output_path="./bootstrap_EU/",
-                 weight=None, bootstrap_rounds=50)
+parser = argparse.ArgumentParser(
+    description="options for bootstrapping sum of z-scores")
+parser.add_argument("--score_path", type=str, default="./group_by_target_EU/")
+parser.add_argument("--measures", type=str, default="CASP16")
+parser.add_argument("--model", type=str, default="best")
+parser.add_argument("--mode", type=str, default="all")
+parser.add_argument("--output_path", type=str, default="./bootstrap_EU/")
+parser.add_argument("--impute_value", type=int, default=-2)
+parser.add_argument("--p_value_threshold", type=float, default=0.05)
+parser.add_argument("--weight", type=float, nargs='+', default=None)
+parser.add_argument("--bootstrap_rounds", type=int, default=1000)
+parser.add_argument("--equal_weight", action="store_true")
+parser.add_argument("--top_n", type=int, default=25)
+args = parser.parse_args()
 
-sys.exit(0)
+score_path = args.score_path
+measures = args.measures
+model = args.model
+mode = args.mode
+output_path = args.output_path
+impute_value = args.impute_value
+p_value_threshold = args.p_value_threshold
+weight = args.weight
+bootstrap_rounds = args.bootstrap_rounds
+equal_weight = args.equal_weight
+top_n = args.top_n
 
-# group 1 is the first group in the ranked points
-group_1 = list(points.keys())[0]
-# group 2 is the second group in the ranked points
-group_2 = list(points.keys())[1]
-# now do bootstrapping
-rounds = 10000
-group_1_wins = []
-group_2_wins = []
-no_difference = []
-for i in range(rounds):
-    sampled_data = T1_data.sample(frac=1, replace=True)
-    # print(sampled_data.shape)
-    group_1_data = sampled_data[group_1]
-    group_2_data = sampled_data[group_2]
-    t_stat, p_value = stats.ttest_rel(group_1_data, group_2_data)
-    if t_stat > 0 and p_value/2 < 0.01:
-        group_1_wins.append(1)
-    elif t_stat < 0 and p_value/2 < 0.01:
-        group_2_wins.append(1)
-    else:
-        no_difference.append(1)
-print("Score: {}".format(measure))
-print("Group 1: {}, Group 2: {}".format(group_1, group_2))
-print("Group 1 wins: {}, Group 2 wins: {}".format(
-    len(group_1_wins), len(group_2_wins)))
-print("No difference: {}".format(len(no_difference)))
-
-
-################
-sys.exit(0)
-
-
-def jackknife_resampling(data):
-    n = len(data)
-    jackknife_samples = []
-    for i in range(n):
-        sample = np.delete(data, i)
-        jackknife_samples.append(sample.mean())
-    return np.array(jackknife_samples)
-
-
-def jackknife_t_test(group_1, group_2):
-    # Perform jackknife resampling
-    jack_1 = jackknife_resampling(group_1)
-    jack_2 = jackknife_resampling(group_2)
-    # Perform t-test on jackknife samples
-    t_statistic, p_value = stats.ttest_ind(jack_1, jack_2)
-    return t_statistic, p_value
-
-
-# Example usage
-np.random.seed(42)  # for reproducibility
-group_1 = np.random.normal(loc=0, scale=1, size=30)
-group_2 = np.random.normal(loc=0.5, scale=1, size=30)
-t_stat, p_val = jackknife_t_test(group_1, group_2)
-print(f"T-statistic: {t_stat}")
-print(f"P-value: {p_val}")
-# Interpret the results
-alpha = 0.05
-if p_val < alpha:
-    print("Reject the null hypothesis: There is a significant difference between the groups.")
+if equal_weight:
+    weight = [1/8] * 8
 else:
-    print("Fail to reject the null hypothesis: There is no significant difference between the groups.")
+    weight = [1/4, 1/8,
+              1/8, 1/8,
+              1/8,
+              1/8, 1/16,
+              1/4]
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
+bootstrap_t_test(measures, model, mode,
+                 score_path, output_path=output_path,
+                 impute_value=impute_value, p_value_threshold=p_value_threshold, weight=weight, bootstrap_rounds=bootstrap_rounds, top_n=top_n)
