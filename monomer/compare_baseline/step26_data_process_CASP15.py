@@ -9,8 +9,8 @@ monomer_path = "/home2/s439906/data/CASP16/monomers_EU_merge_v/"
 monomer_path = "/home2/s439906/data/CASP16/regular/"
 monomer_list = [txt for txt in os.listdir(
     monomer_path) if txt.endswith(".txt") and "D" in txt]
-monomer_data_EU_path = "./monomer_data_regular_CASP15/processed/"
-monomer_data_raw_EU_path = "./monomer_data_regular_CASP15/raw_data/"
+monomer_data_EU_path = "./monomer_data_CASP15/processed/"
+monomer_data_raw_EU_path = "./monomer_data_CASP15/raw_data/"
 
 if not os.path.exists(monomer_data_EU_path):
     os.makedirs(monomer_data_EU_path)

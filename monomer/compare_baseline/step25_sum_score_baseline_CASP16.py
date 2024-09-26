@@ -1,3 +1,4 @@
+import sys
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -21,6 +22,7 @@ hard_group = [
     "T1271s3-D1",
     "T1271s8-D1",
 ]
+
 medium_group = [
     "T1210-D3",
     "T1212-D1",
@@ -67,6 +69,7 @@ medium_group = [
     "T1298-D1",
     "T1298-D2",
 ]
+
 easy_group = [
     "T1201-D1",
     "T1201-D2",
@@ -105,14 +108,13 @@ easy_group = [
 # csv_path = "./monomer_data_aug_30/processed/EU/"
 # csv_path = "./monomer_data_Sep_10/processed/EU/"
 # csv_path = "./monomer_data_Sep_10/raw_data/EU/"
-csv_path = "./monomer_data_regular_CASP15/raw_data/"
-# baseline_path = "./monomer_data_regular_CASP15/raw_data/"
+csv_path = "../monomer_data_Sep_15_EU/raw_data/"
+# baseline_path = "./baseline_data_Sep_15_EU/raw_data/"
 csv_list = [txt for txt in os.listdir(
     csv_path) if txt.endswith(".csv") and txt.startswith("T1")]
-print(csv_list.__len__())
-out_path = "./group_by_target_raw_CASP15/"
-sum_path = "./sum_raw_CASP15/"
-
+out_path = "./group_by_target/"
+sum_path = "./sum/"
+png_path = "./png/"
 
 # out_path = "./group_by_target/"
 # sum_path = "./sum/"
@@ -120,6 +122,8 @@ if not os.path.exists(out_path):
     os.makedirs(out_path)
 if not os.path.exists(sum_path):
     os.makedirs(sum_path)
+if not os.path.exists(png_path):
+    os.makedirs(png_path)
 
 model = "first"
 model = "best"
@@ -169,9 +173,8 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
         data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
         data_tmp = pd.DataFrame(data_tmp[feature])
         # there is a BUG here. something wrong with group 999 processing but I don't have time to fix it.
-        # so just leave it here as it is.
+        # so just leave it here as it is, since I even know which group is colabfold lol :D
         data_tmp = data_tmp.replace("-", float(0))
-        # breakpoint()
         if feature in inverse_columns:
             data_tmp[feature] = -data_tmp[feature]
         data_tmp.index = data_tmp.index.str.extract(
@@ -183,21 +186,17 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
         # drop all data with submission_id == 6
         if model == "best":
             data_tmp = data_tmp.loc[(slice(None), slice(None), [
-                "1", "2", "3", "4", "5"]), :]
+                "1", "2", "3", "4", "5"]), :]  # remove 6
         elif model == "first":
             data_tmp = data_tmp.loc[(slice(None), slice(None),
                                      "1"), :]
         grouped = data_tmp.groupby(["group"])
+        # breakpoint()
         grouped = pd.DataFrame(grouped[feature].max())
         # grouped.index = grouped.index.droplevel(1)
         # if there is any value in this column that is a string, convert it to float
         grouped[feature] = grouped[feature].astype(float)
         try:
-            # # find if there is any string in the dataframe
-            # for i in range(grouped.shape[0]):
-            #     for j in range(grouped.shape[1]):
-            #         if isinstance(grouped.iloc[i, j], str):
-            #             print(grouped.iloc[i, j])
             grouped = grouped.sort_values(by=feature, ascending=False)
             # print all the value in grouped
             # for i in range(grouped.shape[0]):print(grouped.iloc[i])
@@ -223,6 +222,7 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
         data = pd.concat([data, new_z_score], axis=1)
         data_raw = pd.concat([data_raw, grouped], axis=1)
 
+    # breakpoint()
     # impute data again with -2
     data = data.fillna(-2.0)
     # sort columns by alphabetical order
@@ -263,6 +263,7 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
     data_raw = data_raw.sort_values(by="sum", ascending=False)
     data_raw.to_csv(sum_path
                     + "sum_raw_unweighted_baseline_{}-{}-{}.csv".format(feature, model, mode))
+
     data_raw.drop(columns=["sum"], inplace=True)
     data_raw_weighted = data_raw * pd.Series(EU_weight)
     data_raw_weighted["sum"] = data_raw_weighted.sum(axis=1)
@@ -270,37 +271,37 @@ def get_group_by_target(csv_list, csv_path, feature, model, mode):
         by="sum", ascending=False)
     data_raw_weighted.to_csv(sum_path
                              + "sum_raw_baseline_{}-{}-{}.csv".format(feature, model, mode))
-    # breakpoint()
     return data, data_raw
 
 
 data, data_raw = get_group_by_target(
     csv_list, csv_path, feature, model, mode)
+
 ###############
 # print the nan rate of the data in columns and rows
-print(data_raw.isna().sum(axis=0)/data.shape[0])
-print(data_raw.isna().sum(axis=1)/data.shape[1])
+print(data_raw.isna().sum(axis=0)/data_raw.shape[0])
+print(data_raw.isna().sum(axis=1)/data_raw.shape[1])
 # remove rows with more than 50% nan values
 data_raw = data_raw[data_raw.isna().sum(axis=1) < 0.5 * data_raw.shape[1]]
-print(data_raw.isna().sum(axis=0)/data.shape[0])
-print(data_raw.isna().sum(axis=1)/data.shape[1])
+print(data_raw.isna().sum(axis=0)/data_raw.shape[0])
+print(data_raw.isna().sum(axis=1)/data_raw.shape[1])
 # for each row, get its non-nan values in intersection with "TS145", and calculate the sum of the non-nan values
 # then divide the sum of the non-nan values by the sum of "TS145" to get the normalized sum
 # then plot the normalized sum
 data_raw = data_raw.T
 
 groups = data_raw.columns
-baseline_group = pd.DataFrame(data_raw["TS446"])
+baseline_group = pd.DataFrame(data_raw["TS145"])
 baseline_dict = {}
 for group in groups:
     data_raw_group = pd.DataFrame(data_raw[group])
     # get the intersection of non nan values in data_raw_group and baseline_group
-    non_nan_baseline = baseline_group[pd.notna(baseline_group["TS446"])].index
+    non_nan_baseline = baseline_group[pd.notna(baseline_group["TS145"])].index
     non_nan_group = data_raw_group[pd.notna(data_raw_group[group])].index
     # 计算两者的交集
     intersection_index = non_nan_baseline.intersection(non_nan_group)
     # 根据 intersection_index 获取对应的值
-    baseline_values = baseline_group.loc[intersection_index, "TS446"]
+    baseline_values = baseline_group.loc[intersection_index, "TS145"]
     group_values = data_raw_group.loc[intersection_index, group]
 
     # sum them up
@@ -319,32 +320,34 @@ baseline_dict = dict(sorted(baseline_dict.items(),
                      key=lambda x: x[1], reverse=True))
 groups = [key[2:] for key in baseline_dict.keys()]
 values = list(baseline_dict.values())
-plt.figure(figsize=(30, 15))
-highlight_group = "446"
+
+
+plt.figure(figsize=(30, 10))
+highlight_group = "145"
 bar_colors = ['C0' if group != highlight_group else 'C1' for group in groups]
 plt.bar(groups, values, color=bar_colors)
-plt.xticks(rotation=45, fontsize=12, ha='right')
+plt.xticks(rotation=90, fontsize=20)
+plt.yticks(fontsize=20)
 plt.title(
-    "sum of {} for {} model in {} targets, compared with baseline (group {}) in CASP15".format(feature, model, mode, highlight_group), fontsize=15)
-plt.ylabel("sum of {}".format(feature))
+    "sum of {} for {} model in {} targets, compared with baseline (group {}) in CASP16".format(feature, model, mode, highlight_group), fontsize=20)
+plt.ylabel("sum of {}".format(feature), fontsize=20)
 plt.axhline(y=1, color='k')
 # there is one group 145, we need to write something on top of its bar
 for group, value in zip(groups, values):
-    # breakpoint()
     if group == highlight_group:
-        # breakpoint()
-        plt.text(group, value + 0.02, str("ColabFold"),
-                 ha='center', fontsize=10, color='C1')
+        plt.text(group, value + 0.03, str("ColabFold"),
+                 ha='center', fontsize=20, color='C1')
 # first 5 groups
 first_5_groups = groups[:5]
 first_5_values = values[:5]
 for group, value in zip(first_5_groups, first_5_values):
     plt.text(group, value + 0.01, str(value.round(2)),
-             ha='center', fontsize=7, color='C0')
+             ha='center', fontsize=10, color='C0')
 plt.savefig(
-    sum_path + "sum_intersect_{}-{}-{}_with_colabfold_baseline.png".format(feature, model, mode), dpi=300)
+    png_path + "sum_intersect_{}-{}-{}_with_colabfold_baseline.png".format(feature, model, mode), dpi=300)
 ###############
-breakpoint()
+
+# breakpoint()
 # for feature in features:
 #     get_group_by_target(csv_list, csv_path, feature, model, mode)
 #     print("Finished processing {}".format(feature))
@@ -352,37 +355,38 @@ data_sum = data["sum"]
 # plot the data_sum
 # remove the first 2 char in the index
 data_sum.index = data_sum.index.str[2:]
-plt.figure(figsize=(40, 15))
-highlight_index = "446"
+plt.figure(figsize=(30, 15))
+highlight_index = "145"
 bar_colors = ['C0' if index !=
               highlight_index else 'C1' for index in data_sum.index]
 
 plt.bar(data_sum.index, data_sum.values, color=bar_colors)
-plt.xticks(rotation=45, fontsize=12, ha='right')
+plt.xticks(rotation=90, fontsize=15)
+plt.yticks(fontsize=20)
 plt.title(
-    "sum z-score of {} for {} model in {} targets".format(feature, model, mode))
-plt.ylabel("sum z-score")
+    "sum z-score of {} for {} model in {} targets in CASP16".format(feature, model, mode), fontsize=24)
+plt.ylabel(f"sum {feature} z-score", fontsize=20)
 plt.axhline(y=0, color='k')
 # there is one group 145, we need to write something on top of its bar
 
 for index, value in zip(data_sum.index, data_sum.values):
     if index == highlight_index:
-        plt.text(index, value + 2.5, str("ColabFold"),
-                 ha='center', fontsize=10, color='C1')
-
-
+        plt.text(index, value - 5, str("ColabFold"),
+                 ha='center', fontsize=15, color='C1')
 plt.savefig(
-    sum_path + "sum_z-score_{}-{}-{}.png".format(feature, model, mode), dpi=300)
+    png_path + "sum_z-score_{}-{}-{}.png".format(feature, model, mode), dpi=300)
 # plt.axvline(x="145", color='r')
 
+sys.exit(0)
 
+###############
 # divide by the sum of 145
 data_raw_sum = data_raw["sum"]
 data_raw_sum.index = data_raw_sum.index.str[2:]
 # want to normalize the data_raw_sum by the sum of group 145
-data_raw_sum = data_raw_sum / data_raw_sum["446"]
-plt.figure(figsize=(40, 20))
-highlight_index = "446"
+data_raw_sum = data_raw_sum / data_raw_sum["145"]
+plt.figure(figsize=(30, 15))
+highlight_index = "145"
 bar_colors = ['C0' if index !=
               highlight_index else 'C1' for index in data_raw_sum.index]
 plt.bar(data_raw_sum.index, data_raw_sum.values, color=bar_colors)
@@ -397,5 +401,6 @@ for index, value in zip(data_raw_sum.index, data_raw_sum.values):
         plt.text(index, value + 2.0, str("ColabFold"),
                  ha='center', fontsize=10, color='C1')
 plt.savefig(
-    sum_path + "sum_{}-{}-{}_compared_with_baseline.png".format(feature, model, mode), dpi=300)
+    png_path + "sum_{}-{}-{}_compared_with_baseline.png".format(feature, model, mode), dpi=300)
+
 # breakpoint()
