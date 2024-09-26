@@ -21,10 +21,12 @@ model = "first"
 model = "best"
 
 path = "./sum/"
+path = "./sum_EU/"
 
 data_all = pd.DataFrame()
 for feature in features:
-    file = path + "sum_{}-{}-{}.csv".format(feature, model, mode)
+    file = "./sum_EU/" + \
+        "sum_unweighted_{}-{}-{}.csv".format(feature, model, mode)
     data = pd.read_csv(file, index_col=0)
 
     # drop sum column
@@ -36,13 +38,13 @@ for feature in features:
     data.columns = [feature]
     # data.index = data.index.map(lambda x: "-".join(x))
     data.to_csv(
-        "./tmp/" + "sum_{}-{}-{}_expanded.csv".format(feature, model, mode))
+        "./by_EU/" + "sum_{}-{}-{}_expanded.csv".format(feature, model, mode))
     # breakpoint()
     data_all = pd.concat([data_all, data], axis=1)
 
 
 data_all.to_csv(
-    "./tmp/" + "sum_all-{}-{}_expanded.csv".format(model, mode))
+    "./by_EU/" + "sum_all-{}-{}_expanded.csv".format(model, mode))
 # drop rows with all -2 values
 data_all_exist = data_all[~(data_all == -2.0).all(axis=1)]
 # 交换 MolPrb_Score 和 CAD_SS 两列
@@ -64,7 +66,7 @@ ax = sns.heatmap(correlation_matrix, annot=True,
                  cmap=cmap, cbar=True, center=0, square=True)
 ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
 plt.title("Correlation Matrix")
-plt.savefig("./tmp/" + "correlation_matrix.png", dpi=300)
+plt.savefig("./by_EU/" + "correlation_matrix.png", dpi=300)
 
 
 # # NMF data_all_exist
@@ -76,7 +78,7 @@ plt.savefig("./tmp/" + "correlation_matrix.png", dpi=300)
 breakpoint()
 
 
-N = 5
+N = 4
 # Load_Matrix_rotated = FactorAnalyzer(
 #     rotation='varimax', n_factors=N, method='principal')
 # Load_Matrix_rotated = FactorAnalyzer(
@@ -109,7 +111,7 @@ ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
 plt.title("Factor Analysis (abs)", fontsize="xx-large")
 plt.ylabel("factors", fontsize="xx-large")  # 设置y轴标签
 # 保存图片
-plt.savefig("./tmp/" + "FA_abs.png", dpi=300)
+plt.savefig("./by_EU/" + "FA_abs.png", dpi=300)
 
 
 df = pd.DataFrame(Load_Matrix, index=data_all.columns)
@@ -123,7 +125,7 @@ plt.xlabel("factors", fontsize=12)  # 设置x轴标签
 # plt.xlabel("factors", fontsize="xx-large")  # 设置x轴标签
 # set the x-axis to be factor1, factor2, ...
 ax.set_xticklabels(["factor" + str(i + 1) for i in range(N)], fontsize=10)
-plt.savefig("./tmp/" + "FA_{}.png".format(N), dpi=300)
+plt.savefig("./by_EU/" + "FA_{}.png".format(N), dpi=300)
 
 
 M = Load_Matrix_rotated.loadings_
@@ -144,7 +146,7 @@ plt.xlabel("factors", fontsize=10)  # 设置x轴标签
 # plt.xlabel("factors", fontsize="xx-large")  # 设置x轴标签
 # set the x-axis to be factor1, factor2, ...
 ax.set_xticklabels(["factor" + str(i + 1) for i in range(N)], fontsize=10)
-plt.savefig("./tmp/" + "weight_FA_{}.png".format(N), dpi=300)
+plt.savefig("./by_EU/" + "weight_FA_{}.png".format(N), dpi=300)
 
 
 regression_score = data_all@F_mat.T
@@ -157,11 +159,11 @@ score_df = pd.DataFrame(
 # group by the first level of the index
 score_df = score_df.groupby(level=0).sum()
 score_df.to_csv(
-    "./tmp/" + "factor_score_all-{}-{}_expanded.csv".format(model, mode))
+    "./by_EU/" + "factor_score_all-{}-{}_expanded.csv".format(model, mode))
 # sort the score_df by the first level of the index
 score_df = score_df.sort_values(by="low_resolution_score", ascending=False)
 score_df.to_csv(
-    "./tmp/" + "factor_score_all-{}-{}_expanded_sorted.csv".format(model, mode))
+    "./by_EU/" + "factor_score_all-{}-{}_expanded_sorted.csv".format(model, mode))
 breakpoint()
 # score_df.index = score_df.index.str.extract(
 #     r'(T\w+)TS(\w+)_(\w+)-(D\w+)').apply(lambda x: (f"{x[0]}-{x[3]}", f"TS{x[1]}", x[2]), axis=1)
@@ -177,7 +179,7 @@ plt.title("low_resolution_score vs chemical_score")
 for i in range(score_df.shape[0]):
     plt.text(score_df["low_resolution_score"].iloc[i],
              score_df["chemical_score"].iloc[i], score_df.index[i])
-plt.savefig("./tmp/" + "low_resolution_score_vs_chemical_score.png", dpi=300)
+plt.savefig("./by_EU/" + "low_resolution_score_vs_chemical_score.png", dpi=300)
 
 # plot first column vs third column
 plt.figure(figsize=(10, 15))
@@ -190,7 +192,7 @@ for i in range(score_df.shape[0]):
     plt.text(score_df["low_resolution_score"].iloc[i],
              score_df["high_resolution_score"].iloc[i], score_df.index[i])
 plt.savefig(
-    "./tmp/" + "low_resolution_score_vs_high_resolution_score.png", dpi=300)
+    "./by_EU/" + "low_resolution_score_vs_high_resolution_score.png", dpi=300)
 
 # plot second column vs third column
 plt.figure(figsize=(10, 15))
@@ -203,4 +205,4 @@ for i in range(score_df.shape[0]):
     plt.text(score_df["chemical_score"].iloc[i],
              score_df["high_resolution_score"].iloc[i], score_df.index[i])
 
-plt.savefig("./tmp/" + "chemical_score_vs_high_resolution_score.png", dpi=300)
+plt.savefig("./by_EU/" + "chemical_score_vs_high_resolution_score.png", dpi=300)
