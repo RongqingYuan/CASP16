@@ -11,6 +11,7 @@ monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_8/"
 monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_10/"
 monomer_path = "/home2/s439906/data/CASP16/monomers_EU_merge_v/"
 monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_21/"
+monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_25/"
 
 monomer_list = [txt for txt in os.listdir(
     monomer_path) if txt.endswith(".txt")]
@@ -53,8 +54,8 @@ monomer_list = [txt for txt in os.listdir(
 # if not os.path.exists(monomer_data_all_path):
 #     os.makedirs(monomer_data_all_path)
 
-monomer_data_EU_path = "./monomer_data_Sep_21_tmp/processed/"
-monomer_data_raw_EU_path = "./monomer_data_Sep_21_tmp/raw_data/"
+monomer_data_EU_path = "./monomer_data_Sep_25/processed/"
+monomer_data_raw_EU_path = "./monomer_data_Sep_25/raw_data/"
 
 if not os.path.exists(monomer_data_EU_path):
     os.makedirs(monomer_data_EU_path)
@@ -82,9 +83,9 @@ if not os.path.exists(monomer_data_raw_EU_path):
 # # print("evaluation unit: ", evaluation_unit)
 # # print("whole structure: ", whole_structure)
 
-csv_tmp_path = "./csv_tmp/"
-if not os.path.exists(csv_tmp_path):
-    os.makedirs(csv_tmp_path)
+# csv_tmp_path = "./csv_tmp/"
+# if not os.path.exists(csv_tmp_path):
+#     os.makedirs(csv_tmp_path)
 
 # read the monomer list
 time_1 = time.time()
@@ -178,7 +179,7 @@ for monomer in monomer_list:
     # remove z-score less than -2
     filtered_data = data[((initial_z >= -2) | initial_z.isna()).all(axis=1)]
     # filtered_data = data[initial_z >= -2]
-    filtered_data.to_csv(csv_tmp_path + monomer[:-4] + ".csv")
+    # filtered_data.to_csv(csv_tmp_path + monomer[:-4] + ".csv")
 
     # remove outliers: i.e. if any value is smaller than -2, we directly remove the whole row
     # data = data[(data > -2).all(axis=1)]

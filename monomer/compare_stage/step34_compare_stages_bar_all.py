@@ -22,18 +22,18 @@ model = "best"
 mode = "all"
 impute_value = -2
 
-T1_score_path = "./group_by_target_EU/raw/"
+T1_score_path = "../group_by_target_EU/raw/"
 T1_score_file = f"groups_by_targets_for-raw-{measure}-{model}-{mode}.csv"
 T1_data = pd.read_csv(T1_score_path + T1_score_file, index_col=0)
 T1_data = T1_data.filter(regex='T1')
 
-all_score_path = "./group_by_target_tmp/raw/"
+all_score_path = "./group_by_target/raw/"
 all_score_file = f"groups_by_targets_for-raw-{measure}-{model}-{mode}.csv"
 data = pd.read_csv(all_score_path + all_score_file, index_col=0)
 T0_data = data.filter(regex='T0')
 T2_data = data.filter(regex='T2')
 
-out_path = "./compare_stages_tmp/"
+out_path = "./compare/"
 if not os.path.exists(out_path):
     os.makedirs(out_path)
 print(T0_data.shape)
@@ -52,6 +52,9 @@ if stages == ["T0", "T1"]:
     T0_data.index = T0_data.index.str.extract(r'T0([-\w]+)')[0]
     # there is a -D*. In order to match the "-" in the regex, we need to add "-" in the regex
     T1_data.index = T1_data.index.str.extract(r'T1([-\w]+)')[0]
+    # then remove the "-all" in T1_data.index
+    T1_data.index = T1_data.index.str.replace("-all", "")
+    breakpoint()
     # 确保索引对齐
     common_index = T0_data.index.intersection(T1_data.index)
     df0_aligned = T0_data.loc[common_index]
@@ -95,15 +98,16 @@ if stages == ["T0", "T1"]:
     print(sorted(diff_valid_numbers, reverse=True))
 
     # plot the diff_valid_dict
-    plt.figure(figsize=(20, 10))
+    plt.figure(figsize=(16, 12))
     plt.bar(diff_valid_dict.keys(), diff_valid_dict.values())
-    plt.xticks(rotation=45, ha='right', fontsize=10)
-    plt.ylabel("{} of {} - {}".format(measure,
-               stages[1], stages[0]), fontsize=12)
+    plt.xticks(rotation=45, ha='right', fontsize=20)
+    plt.yticks(fontsize=20)
+    plt.ylabel("{}, {} - {}".format(measure,
+               stages[1], stages[0]), fontsize=20)
     # draw a horizontal line at y=0
     plt.axhline(0, color='black', linestyle='-')
-    plt.title("Mean difference between {} of {} and {} for top {} of {}".format(
-        measure, stages[1], stages[0], top_n, model), fontsize=14)
+    plt.title("Mean difference between {} of {} and {} for top {} of {} models".format(
+        measure, stages[1], stages[0], top_n, model), fontsize=20)
     fig_file = f"T1_T0_diffs_{measure}_top_{top_n}_{model}.png"
     plt.savefig(out_path + fig_file, dpi=300)
 
@@ -112,6 +116,8 @@ elif stages == ["T1", "T2"]:
     T1_data.index = T1_data.index.str.extract(r'T1([-\w]+)')[0]
     # there is a -D*. In order to match the "-" in the regex, we need to add "-" in the regex
     T2_data.index = T2_data.index.str.extract(r'T2([-\w]+)')[0]
+    T1_data.index = T1_data.index.str.replace("-all", "")
+
     # 确保索引对齐
     common_index = T1_data.index.intersection(T2_data.index)
     df0_aligned = T1_data.loc[common_index]
@@ -154,14 +160,15 @@ elif stages == ["T1", "T2"]:
     print(diff_valid_dict)
     print(sorted(diff_valid_numbers, reverse=True))
     # plot the diff_valid_dict
-    plt.figure(figsize=(20, 10))
+    plt.figure(figsize=(24, 12))
     plt.bar(diff_valid_dict.keys(), diff_valid_dict.values())
     plt.ylabel("{} of {} - {}".format(measure,
-                                      stages[1], stages[0]), fontsize=12)
+                                      stages[1], stages[0]), fontsize=20)
     # draw a horizontal line at y=0
     plt.axhline(0, color='black', linestyle='-')
-    plt.xticks(rotation=45, ha='right', fontsize=10)
-    plt.title("Mean difference between {} of {} and {} for top {} of {} targets".format(
-        measure, stages[1], stages[0], top_n, model), fontsize=14)
+    plt.xticks(rotation=45, ha='right', fontsize=20)
+    plt.yticks(fontsize=20)
+    plt.title("Mean difference between {} of {} and {} for top {} of {} models".format(
+        measure, stages[1], stages[0], top_n, model), fontsize=20)
     fig_file = f"T2_T1_diffs_{measure}_top_{top_n}_{model}.png"
     plt.savefig(out_path + fig_file, dpi=300)

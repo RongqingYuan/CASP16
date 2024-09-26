@@ -107,11 +107,11 @@ easy_group = [
 # csv_path = "./monomer_data_Sep_10/processed/EU/"
 # csv_path = "./monomer_data_Sep_10/raw_data/EU/"
 # csv_path = "./monomer_data_Sep_15_EU/raw_data/"
-csv_path = "./monomer_data_Sep_21_tmp/raw_data/"
+csv_path = "./monomer_data_Sep_25/raw_data/"
 csv_list = [txt for txt in os.listdir(
     csv_path) if txt.endswith(".csv") and txt.startswith("T")]
-out_path = "./group_by_target_tmp/"
-sum_path = "./sum_tmp/"
+out_path = "./group_by_target/"
+sum_path = "./sum/"
 if not os.path.exists(out_path):
     os.makedirs(out_path)
 if not os.path.exists(sum_path):
