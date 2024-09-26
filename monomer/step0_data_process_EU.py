@@ -218,11 +218,12 @@ for monomer in monomer_list:
     # print(data.head())
     # time.sleep(5)
 
-    try:
-        data = data.astype(float)
-    except ValueError:
-        print("ValueError: ", monomer)
-        sys.exit()
+    # try:
+    #     data = data.astype(float)
+    # except ValueError:
+    #     print("ValueError: ", monomer)
+    #     sys.exit()
+    data = data.astype(float)
 
     # try:
     #     data = (data - data.mean()) / data.std()
