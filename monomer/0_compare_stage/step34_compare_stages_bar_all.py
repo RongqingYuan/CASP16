@@ -26,6 +26,9 @@ T1_score_path = "../group_by_target_EU/raw/"
 T1_score_file = f"groups_by_targets_for-raw-{measure}-{model}-{mode}.csv"
 T1_data = pd.read_csv(T1_score_path + T1_score_file, index_col=0)
 T1_data = T1_data.filter(regex='T1')
+# drop column T1244s1-D1
+T1_data = T1_data.drop(columns='T1244s1-D1')
+breakpoint()
 
 all_score_path = "./group_by_target/raw/"
 all_score_file = f"groups_by_targets_for-raw-{measure}-{model}-{mode}.csv"
@@ -44,9 +47,9 @@ T0_data = T0_data.T
 T1_data = T1_data.T
 T2_data = T2_data.T
 
-stages = ["T0", "T1"]
 stages = ["T1", "T2"]
-top_n = 20
+stages = ["T0", "T1"]
+top_n = 25
 if stages == ["T0", "T1"]:
     # 提取xxx部分
     T0_data.index = T0_data.index.str.extract(r'T0([-\w]+)')[0]
@@ -62,6 +65,7 @@ if stages == ["T0", "T1"]:
     # 计算差值
     df0_aligned = df0_aligned.T
     df1_aligned = df1_aligned.T
+    breakpoint()
 
     targets = df0_aligned.columns
     diff_valid_numbers = []
@@ -75,11 +79,15 @@ if stages == ["T0", "T1"]:
         # 取出交集部分
         df0_aligned_valid = df0_aligned_target[valid_rows]
         df1_aligned_valid = df1_aligned_target[valid_rows]
+        # breakpoint()
         # 计算差值
         # df_diff_valid = df1_aligned_valid - df0_aligned_valid
         # get top_n means for df0_aligned_valid and df1_aligned_valid
         df0_aligned_valid = list(df0_aligned_valid)
         df1_aligned_valid = list(df1_aligned_valid)
+        # sort the two lists
+        df0_aligned_valid.sort()
+        df1_aligned_valid.sort()
         diff_valid_number = len(df0_aligned_valid)
         df0_aligned_valid = df0_aligned_valid[:top_n]
         df1_aligned_valid = df1_aligned_valid[:top_n]
@@ -143,6 +151,8 @@ elif stages == ["T1", "T2"]:
         # get top_n means for df0_aligned_valid and df1_aligned_valid
         df0_aligned_valid = list(df0_aligned_valid)
         df1_aligned_valid = list(df1_aligned_valid)
+        df0_aligned_valid.sort()
+        df1_aligned_valid.sort()
         diff_valid_number = len(df0_aligned_valid)
         df0_aligned_valid = df0_aligned_valid[:top_n]
         df1_aligned_valid = df1_aligned_valid[:top_n]
