@@ -1,0 +1,29 @@
+#!/bin/bash
+#SBATCH -p 256GB
+#SBATCH -n 48
+#SBATCH --mem=192g
+#SBATCH -t 28-00:00:00
+#SBATCH -o T0_job.log
+#SBATCH -e T0_job.err
+#SBATCH -J T0_job
+
+
+MODEL=best
+IMPUTE_VALUE=-2
+MODE=all
+
+echo "starting step0_data_process_EU.py"
+python -u step0_data_process_EU.py --stage 0
+wait
+
+echo "starting step10_sum_z-score.py"
+python -u step10_sum_z-score.py --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE --csv_path ./monomer_data_T0_EU/raw_data/ --sum_path ./sum_T0/ --out_path ./group_by_target_T0/ &
+wait
+
+echo "starting step28_bootstrap_sum.py"
+python -u step28_bootstrap_sum.py --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE --score_path ./group_by_target_T0/ --output_path ./bootstrap_EU_T0/ &
+wait
+
+# echo "starting step30_bootstrap_t-test.py"
+# python -u step30_bootstrap_t-test.py --bootstrap_rounds 100 --model best --equal_weight --impute_value -2 &
+# wait
