@@ -1,12 +1,9 @@
 import os
 import argparse
 import seaborn as sns
-import scipy.stats as stats
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import stats
-import sys
 
 
 def bootstrap_sum(measures, model, mode,
@@ -19,8 +16,11 @@ def bootstrap_sum(measures, model, mode,
                         'GDT_HA', 'QSE', 'reLLG_const']
             measure_type = "CASP15"
         elif measures == "CASP16":
-            measures = ['GDT_HA', 'GDC_SC', 'AL0_P', 'SphGr',
-                        'CAD_AA', 'QSE', 'MolPrb_Score', 'reLLG_const']
+            measures = ['GDT_HA', 'GDC_SC',
+                        'AL0_P', 'SphGr',
+                        'CAD_AA', 'QSE', 'LDDT',
+                        'MolPrb_Score',
+                        'reLLG_const']
             measure_type = "CASP16"
         else:
             print("measures should be a list of strings, or 'CASP15' / 'CASP16'")
@@ -85,7 +85,7 @@ def bootstrap_sum(measures, model, mode,
 
     groups = list(sum_scores.keys())
     groups_plt = [group[2:] for group in groups]
-    plt.figure(figsize=(48, 24))
+    plt.figure(figsize=(50, 25))
     bottom = [0 for i in range(length)]
     for key in measure_score_dict:
         measure_points = measure_score_dict[key]
@@ -93,22 +93,50 @@ def bootstrap_sum(measures, model, mode,
         plt.bar(groups_plt, points, bottom=bottom, label=key, width=0.8)
         bottom = [bottom[i] + points[i] for i in range(length)]
     plt.xticks(np.arange(length), groups_plt,
-               rotation=90, fontsize=24, ha='right')
+               rotation=90, fontsize=24)
     plt.yticks(fontsize=24)
-    plt.legend(fontsize=24)
+    plt.legend(fontsize=28)
     if equal_weight:
         plt.title(
-            f"sum z-score for {measure_type} EUs with equal weight", fontsize=30)
+            f"sum z-score for {measure_type} monomer, {model} models, {mode} EUs with equal weight", fontsize=30)
         plt.savefig(output_path +
                     f"sum_score_{measure_type}_{model}_{mode}_impute={impute_value}_equal_weight.png",
                     dpi=300)
     else:
         plt.title(
-            f"weighted sum z-score for {measure_type} EUs weight", fontsize=30)
+            f"weighted sum z-score for {measure_type} monomer, {model} models, {mode} EUs", fontsize=30)
         plt.savefig(output_path +
                     f"sum_score_{measure_type}_{model}_{mode}_impute={impute_value}_custom_weight.png",
                     dpi=300)
-    #####
+
+    top_n_group = groups[:top_n]
+    top_n_group_plt = groups_plt[:top_n]
+    plt.figure(figsize=(16, 12))
+    bottom = [0 for i in range(top_n)]
+    for key in measure_score_dict:
+        measure_points = measure_score_dict[key]
+        points = [measure_points[group] for group in top_n_group]
+        plt.bar(top_n_group_plt, points, bottom=bottom,
+                label=key, width=0.8)
+        bottom = [bottom[i] + points[i] for i in range(top_n)]
+    plt.xticks(np.arange(top_n), top_n_group_plt,
+               rotation=45, fontsize=20, ha='right')
+    plt.yticks(fontsize=20)
+    # set y tick min to -15
+    if min(bottom) > 0:
+        plt.ylim(-2, max(bottom)+5)
+    # plt.ylim(-5, max(bottom)+5)
+    plt.legend(fontsize=20)
+    if equal_weight:
+        plt.title(
+            f"sum z-score for {measure_type} monomer, {model} models, {mode} EUs with equal weight", fontsize=20)
+        png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_equal_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+    else:
+        plt.title(
+            f"weighted sum z-score for {measure_type} monomer, {model} models, {mode} EUs", fontsize=20)
+        png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
 
     sum = grouped_data.sum(axis=0)
     scores = dict(sum)
@@ -156,7 +184,7 @@ def bootstrap_sum(measures, model, mode,
         spine.set_linewidth(2)
     ax.set_xticklabels(ax.get_xticklabels(), horizontalalignment='center')
     ax.set_yticklabels(ax.get_yticklabels(), verticalalignment='center')
-    plt.xticks(np.arange(length), groups, rotation=45, fontsize=10, ha='right')
+    plt.xticks(np.arange(length), groups, rotation=45, fontsize=10)
     plt.yticks(np.arange(length), groups, rotation=0, fontsize=10)
     plt.title(
         "{} bootstrap result of sum points for {} EUs".format(measure_type, mode), fontsize=20)
@@ -173,7 +201,6 @@ def bootstrap_sum(measures, model, mode,
     plt.figure(figsize=(16, 12))
     ax = sns.heatmap(win_matrix_top_n, annot=True, fmt=".2f",
                      cmap='Greys', cbar=True, square=True,
-                     #
                      #   linewidths=1, linecolor='black',
                      )
 
@@ -198,14 +225,15 @@ def bootstrap_sum(measures, model, mode,
         spine.set_linewidth(2)
     ax.set_xticklabels(ax.get_xticklabels(), horizontalalignment='center')
     ax.set_yticklabels(ax.get_yticklabels(), verticalalignment='center')
-    plt.xticks(np.arange(top_n), top_n_id, rotation=45, fontsize=12)
-    plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=12)
+    plt.xticks(np.arange(top_n), top_n_id,
+               rotation=45, fontsize=18, ha='right')
+    plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=18)
     if equal_weight:
-        plt.title("Bootstrap result of {} score for {} top {} groups, with equal weight".format(
-            measure_type, mode, top_n), fontsize=18)
+        plt.title("bootstrap result of {} score for {} models, {} targets, top {} groups, equal weight".format(
+            measure_type, model, mode, top_n), fontsize=16)
     else:
-        plt.title("Bootstrap result of {} score for {} top {} groups".format(
-            measure_type, mode, top_n), fontsize=18)
+        plt.title("bootstrap result of {} score for {} models, {} targets, top {} groups".format(
+            measure_type, model, mode, top_n), fontsize=16)
     png_top_file = f"win_matrix_{measure_type}_{model}_{mode}_n={bootstrap_rounds}_equal_weight={equal_weight}_impute={impute_value}_top_{top_n}_bootstrap_sum.png"
     plt.savefig(output_path + png_top_file, dpi=300)
 
@@ -239,6 +267,11 @@ def bootstrap_sum(measures, model, mode,
 #                    'CAD_AA',
 #                    'QSE', 'MolPrb_Score',
 #                    'reLLG_const']
+# measures = ['GDT_HA', 'GDC_SC',
+#             'AL0_P', 'SphGr',
+#             'CAD_AA', 'QSE', 'LDDT',
+#             'MolPrb_Score',
+#             'reLLG_const']
 # equal_weight = True
 # equal_weight = False
 
@@ -267,20 +300,26 @@ weight = args.weight
 bootstrap_rounds = args.bootstrap_rounds
 top_n = args.top_n
 equal_weight = args.equal_weight
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
 if equal_weight:
-    weight = [1/8] * 8
+    weight = [1/9] * 9
 else:
     # weight = [1/16, 1/16, 1/16,
     #           1/12, 1/12,
     #           1/4, 1/4, 1/4]
 
-    weight = [1/4, 1/8,
-              1/8, 1/8,
-              1/8,
-              1/8, 1/16,
-              1/4]
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
+    weight = [1/6, 1/16,
+              1/16, 1/8,
+              1/8, 1/6, 1/16,
+              1/16,
+              1/6]
+
+# measures = ['GDT_HA', 'GDC_SC',
+#             'AL0_P', 'SphGr',
+#             'CAD_AA', 'QSE', 'LDDT',
+#             'MolPrb_Score',
+#             'reLLG_const']
 bootstrap_sum(measures=measures, model=model, mode=mode,
               score_path=score_path, output_path=output_path,
               impute_value=impute_value, weight=weight, bootstrap_rounds=bootstrap_rounds, top_n=top_n)
