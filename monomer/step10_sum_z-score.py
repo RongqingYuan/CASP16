@@ -213,10 +213,8 @@ print(len(hard_group))
 # impute_value = -2
 
 
-# 创建一个解析器对象
 parser = argparse.ArgumentParser(description="options for sum z-score")
 
-# 添加命令行参数
 parser.add_argument('--csv_path', type=str,
                     default="./monomer_data_Sep_15_EU/raw_data/")
 parser.add_argument('--sum_path', type=str, default="./sum_EU/")
@@ -225,7 +223,8 @@ parser.add_argument('--model', type=str, help='first or best', default='best')
 parser.add_argument('--mode', type=str,
                     help='easy, medium, hard or all', default='all')
 parser.add_argument('--impute_value', type=int, default=-2)
-# 解析命令行参数
+parser.add_argument('--stage', type=str, default="1")
+
 args = parser.parse_args()
 csv_path = args.csv_path
 sum_path = args.sum_path
@@ -233,10 +232,18 @@ out_path = args.out_path
 model = args.model
 mode = args.mode
 impute_value = args.impute_value
+# stage = args.stage
+# if stage == "1":
+#     csv_list = [txt for txt in os.listdir(
+#         csv_path) if txt.endswith(".csv") and txt.startswith("T1")]
+# elif stage == "0":
+#     csv_list = [txt for txt in os.listdir(
+#         csv_path) if txt.endswith(".csv") and txt.startswith("T0")]
+# elif stage == "2":
+#     csv_list = [txt for txt in os.listdir(
+#         csv_path) if txt.endswith(".csv") and txt.startswith("T2")]
 csv_list = [txt for txt in os.listdir(
-    csv_path) if txt.endswith(".csv") and txt.startswith("T1")]
-print(len(csv_list))
-# sort csv_list by target name
+    csv_path) if txt.endswith(".csv") and txt.startswith("T")]
 csv_list = sorted(csv_list)
 
 
