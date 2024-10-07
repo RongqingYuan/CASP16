@@ -16,50 +16,35 @@ def group_by_target(results_dir, result_files, out_dir,
     for result_file in result_files:
         print("Processing {}".format(result_file))
         result_path = results_dir + result_file
-        # it is actually a tsv file, us pd.read_csv to read it
         data_tmp = pd.read_csv(result_path, sep="\t", index_col=0)
 
+        ############################
         nr_interf_group_in_ref = data_tmp["nr_interf_group_in_ref"]
         if nr_interf_group_in_ref.nunique() == 1:
-            # print("All values are the same in nr_interf_group_in_ref")
             pass
         else:
             print("Not all values are the same in nr_interf_group_in_ref")
         nr_refinterf_num = data_tmp["nr_refinterf_#"]
         if nr_refinterf_num.nunique() == 1:
-            # print("All values are the same in nr_refinterf_#")
-            # convert to string
             nr_refinterf_num = nr_refinterf_num.astype(str)
             pass
         else:
             print("Not all values are the same in nr_refinterf_#")
-
         nr_interf_group_interfsize_in_ref = data_tmp["nr_interf_group_interfsize_in_ref"]
         if nr_interf_group_interfsize_in_ref.nunique() == 1:
-            # print("All values are the same in nr_interf_group_interfsize_in_ref")
-            # convert to string
             nr_interf_group_interfsize_in_ref = nr_interf_group_interfsize_in_ref.astype(
                 str)
             pass
         else:
             print("Not all values are the same in nr_interf_group_interfsize_in_ref")
+        ############################
 
         data_tmp = pd.DataFrame(data_tmp[feature]).astype(str)
         data_tmp_split = data_tmp[feature].str.split(';', expand=True)
         data_tmp_split.columns = [
             f'interface_{i+1}' for i in range(data_tmp_split.shape[1])]
-
-        # data_tmp = pd.concat([data_tmp, data_tmp_split], axis=1)
-        # breakpoint()
-
-        # # check if there is any "-" in the data
-        # has_dash = data_tmp[feature].str.contains('-')
-        # has_dash = data_tmp[feature].str.contains('None')
-        # print(has_dash.sum())
-
         # fill "-" with nan
         data_tmp_split = data_tmp_split.replace("-", np.nan)
-        # convert everything to float
         data_tmp_split = data_tmp_split.astype(float)
 
         data_tmp_split.index = data_tmp_split.index.str.extract(
@@ -72,31 +57,6 @@ def group_by_target(results_dir, result_files, out_dir,
         elif model == "first":
             data_tmp_split = data_tmp_split.loc[(slice(None), slice(None),
                                                  "1"), :]
-
-        # # get the first nr_refinterf_num
-        # nr_refinterf_num = nr_refinterf_num.iloc[0]
-        # nr_interface_weights = nr_refinterf_num.split(";")
-        # nr_interface_weights = [float(weight)
-        #                         for weight in nr_interface_weights]
-
-        # # get the first nr_interf_group_interfsize_in_ref
-        # nr_interf_group_interfsize_in_ref = nr_interf_group_interfsize_in_ref.iloc[0]
-        # nr_interf_group_interfsize_in_ref = nr_interf_group_interfsize_in_ref.split(
-        #     ";")
-
-        # nr_interface_size_weights = []
-        # for i in range(len(nr_interf_group_interfsize_in_ref)):
-        #     size_info = nr_interf_group_interfsize_in_ref[i].split(",")
-        #     size_weight = 0
-        #     for j in range(len(size_info)):
-        #         sizes = size_info[j].split("/")
-        #         for size in sizes:
-        #             size_weight += int(size)
-        #     nr_interface_size_weights.append(size_weight)
-        # # take log 10 of the nr_interface_size_weights
-        # nr_interface_size_weights = np.log10(nr_interface_size_weights)
-
-        # EU_weight = data_tmp_split.shape[1] ** (1/3)
 
         for i in range(data_tmp_split.shape[1]):
             grouped = data_tmp_split.groupby(["group"])
@@ -125,48 +85,33 @@ def group_by_target(results_dir, result_files, out_dir,
     for result_file in result_files:
         print("Processing {}".format(result_file))
         result_path = results_dir + result_file
-        # it is actually a tsv file, us pd.read_csv to read it
         data_tmp = pd.read_csv(result_path, sep="\t", index_col=0)
 
+        ############################
         nr_interf_group_in_ref = data_tmp["nr_interf_group_in_ref"]
         if nr_interf_group_in_ref.nunique() == 1:
-            # print("All values are the same in nr_interf_group_in_ref")
             pass
         else:
             print("Not all values are the same in nr_interf_group_in_ref")
         nr_refinterf_num = data_tmp["nr_refinterf_#"]
         if nr_refinterf_num.nunique() == 1:
-            # print("All values are the same in nr_refinterf_#")
-            # convert to string
             nr_refinterf_num = nr_refinterf_num.astype(str)
             pass
         else:
             print("Not all values are the same in nr_refinterf_#")
-
         nr_interf_group_interfsize_in_ref = data_tmp["nr_interf_group_interfsize_in_ref"]
         if nr_interf_group_interfsize_in_ref.nunique() == 1:
-            # print("All values are the same in nr_interf_group_interfsize_in_ref")
-            # convert to string
             nr_interf_group_interfsize_in_ref = nr_interf_group_interfsize_in_ref.astype(
                 str)
             pass
         else:
             print("Not all values are the same in nr_interf_group_interfsize_in_ref")
+        ############################
 
         data_tmp = pd.DataFrame(data_tmp[feature]).astype(str)
         data_tmp_split = data_tmp[feature].str.split(';', expand=True)
         data_tmp_split.columns = [
             f'interface_{i+1}' for i in range(data_tmp_split.shape[1])]
-
-        # data_tmp = pd.concat([data_tmp, data_tmp_split], axis=1)
-        # breakpoint()
-
-        # # check if there is any "-" in the data
-        # has_dash = data_tmp[feature].str.contains('-')
-        # has_dash = data_tmp[feature].str.contains('None')
-        # print(has_dash.sum())
-
-        # fill "-" with nan
         data_tmp_split = data_tmp_split.replace("-", np.nan)
         data_tmp_split = data_tmp_split.astype(float)
 
@@ -200,21 +145,16 @@ def group_by_target(results_dir, result_files, out_dir,
                 sizes = size_info[j].split("/")
                 for size in sizes:
                     size_weight += int(size)
-            nr_interface_size_weights.append(size_weight)
+            nr_interface_size_weights.append(size_weight/2)
         nr_interface_size_weights = np.log10(nr_interface_size_weights)
         nr_interface_size_weights = np.array(nr_interface_size_weights)
         # nr_interface_size_weights = nr_interface_size_weights / nr_interface_size_weights.sum()
 
         # elementwise multiplication
         interface_weight = nr_interface_weights * nr_interface_size_weights
-        # normalize the weights
         interface_weight = interface_weight / interface_weight.sum()
         print(interface_weight)
-        EU_weight = data_tmp_split.shape[1] ** (1/2)
-        # EU_weight = 1
-
-        # if result_file.startswith("H1236"):
-        #     breakpoint()
+        EU_weight = data_tmp_split.shape[1] ** (1/3)
 
         # get a target_score df that has the same row as data_raw to make sure no nan values
         target_score = pd.DataFrame(index=data_raw.index)
@@ -236,24 +176,14 @@ def group_by_target(results_dir, result_files, out_dir,
                 new_z_score > impute_value, impute_value)
             target_score = pd.concat([target_score, new_z_score], axis=1)
             target_score = target_score.fillna(impute_value)
-            # breakpoint()
-        # breakpoint()
 
-        # continue
-        # breakpoint()
-        # # first weight by the number of interfaces
-        # target_score = target_score * nr_interface_weights
-        # # then weight by the size of the interfaces
-        # target_score = target_score * nr_interface_size_weights
-
+        # take the weighted sum of the interface scores
         target_score = target_score * interface_weight
-        # then take the average of the data
-        data_weighted[result_file.split(".")[0]] = target_score.mean(axis=1)
+        data_weighted[result_file.split(".")[0]] = target_score.sum(axis=1)
         # then multiply by the EU_weight
         data_weighted[result_file.split(".")[0]] = data_weighted[result_file.split(
             ".")[0]] * EU_weight
 
-    # breakpoint()
     data = data.fillna(impute_value)
     data_file = f"group_by_target-{feature}-{model}-{mode}-impute_value={impute_value}.csv"
     data.to_csv(out_dir + data_file)
@@ -270,42 +200,6 @@ def group_by_target(results_dir, result_files, out_dir,
     data_weighted.to_csv(out_dir + sum_data_weighted_file)
 
 
-# results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/"
-# results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/nr_interfaces/"
-
-# out_dir = "./group_by_target_per_interface/"
-# model = "best"
-# model = "first"
-# mode = "all"
-# impute_value = -2
-
-
-# group_by_target(results_dir, result_files, out_dir,
-#                 "dockq_max", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "qs_best_max", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "qs_global_max", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "ics_max", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "ips_max", model, mode, impute_value)
-
-
-# group_by_target(results_dir, result_files, out_dir,
-#                 "dockq_mean", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "qs_best_mean", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "qs_global_mean", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "ics_mean", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "ips_mean", model, mode, impute_value)
-
-# features = ['dockq_mean', 'qs_best_mean', 'qs_global_mean',
-#             'ics_mean', 'ips_mean']
-
 parser = argparse.ArgumentParser(
     description="options for interface score processing")
 parser.add_argument("--features", type=list,
@@ -318,21 +212,64 @@ parser.add_argument("--out_dir", type=str,
 parser.add_argument("--model", type=str, default="best")
 parser.add_argument("--mode", type=str, default="all")
 parser.add_argument("--impute_value", type=int, default=-2)
+parser.add_argument("--stage", type=str, default="1")
 
 args = parser.parse_args()
+features = args.features
 results_dir = args.results_dir
 out_dir = args.out_dir
 model = args.model
 mode = args.mode
 impute_value = args.impute_value
-features = args.features
+stage = args.stage
+
 result_files = [result for result in os.listdir(
     results_dir) if result.endswith(".results")]
-removed_targets = ["T1219",
-                   "T1269",
-                   "H1265",
-                   "T1295",
-                   "T1249"]
+removed_targets = [
+    "T1219",
+    "T1269",
+    "H1265",
+    "T1295",
+    "T1246",
+]
+removed_targets = [
+    # "T1219",
+    "T1246",
+    # "T1269",
+    "T1269v1o_",
+    # "T1295",
+    "T1295o.",
+    # "T1249",
+    # "H1265",
+    "H1265_",
+    "T2270o",
+]
+
+if stage == "1":
+    removed_targets.extend([
+        "T0",
+        "T2",
+        "H0",
+        "H2"
+    ])
+elif stage == "0":
+    removed_targets.extend([
+        "T1",
+        "T2",
+        "H1",
+        "H2"
+    ])
+elif stage == "2":
+    removed_targets.extend([
+        "T0",
+        "T1",
+        "H0",
+        "H1"
+    ])
+else:
+    print("Invalid stage")
+    sys.exit(1)
+
 to_remove = []
 for result_file in result_files:
     for removed_target in removed_targets:
@@ -342,9 +279,6 @@ for result_file in result_files:
 for remove in to_remove:
     result_files.remove(remove)
 result_files = sorted(result_files)
-# print(result_files.__len__())
-
-
 for feature in features:
     group_by_target(results_dir, result_files, out_dir,
                     feature, model, mode, impute_value)

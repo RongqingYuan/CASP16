@@ -14,9 +14,10 @@
 # measures = (GDT_TS, GDT_HA, GDC_SC, 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P','AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT','CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash','CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash', 'MP_rotout', 'MP_ramout', 'MP_ramfv', 'reLLG_lddt', 'reLLG_const')
 
 # define a variable for the model
-MODEL=best
+MODEL=first
 # define a variable for the impute value
 IMPUTE_VALUE=-2
+MODE=all
 
 echo "starting step11_process_new_EU_score.py"
 python step11_process_new_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE &
@@ -24,6 +25,7 @@ wait
 echo "starting step20_process_new_interface_score.py"
 python step20_process_new_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE &
 wait
-echo "starting step21_bootstrap_sum_new_interface.py"
-python step21_bootstrap_sum_new_interface.py --model $MODEL --impute_value $IMPUTE_VALUE &
-wait
+
+# echo "starting step21_bootstrap_sum_new_interface.py"
+# python step21_bootstrap_sum_new_interface.py --model $MODEL --impute_value $IMPUTE_VALUE --output_path ./bootstrap_new_interface_update_T/ &
+# wait

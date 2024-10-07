@@ -14,11 +14,10 @@ def group_by_target(results_dir, result_files, out_dir, feature, model, mode, im
     for result_file in result_files:
         print("Processing {}".format(result_file))
         result_path = results_dir + result_file
-        # it is actually a tsv file, us pd.read_csv to read it
         data_tmp = pd.read_csv(result_path, sep="\t", index_col=0)
         data_tmp = data_tmp.replace("-", np.nan)
         data_tmp[feature] = data_tmp[feature].astype(float)
-        # fill "-" with nan
+
         data_tmp = pd.DataFrame(data_tmp[feature])
         data_tmp.index = data_tmp.index.str.extract(
             r'(\w+)TS(\w+)_(\w+)').apply(lambda x: (f"{x[0]}", f"TS{x[1]}", x[2][0]), axis=1)
@@ -63,19 +62,6 @@ def group_by_target(results_dir, result_files, out_dir, feature, model, mode, im
     data.to_csv(out_dir + sum_data_file)
 
 
-# results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/"
-
-
-# out_dir = "./group_by_target_EU_new/"
-# model = "first"
-# mode = "all"
-# impute_value = -2
-
-
-# measures = ["qs_global", "qs_best", "ics",
-#             "ips", "dockq_ave", "tm_score", "lddt"]
-
-
 parser = argparse.ArgumentParser(
     description="options for data processing")
 parser.add_argument("--measures", type=list,
@@ -88,6 +74,7 @@ parser.add_argument("--out_dir", type=str,
 parser.add_argument("--model", type=str, default="best")
 parser.add_argument("--mode", type=str, default="all")
 parser.add_argument("--impute_value", type=int, default=-2)
+parser.add_argument("--stage", type=str, default="1")
 
 
 args = parser.parse_args()
@@ -97,16 +84,53 @@ model = args.model
 mode = args.mode
 impute_value = args.impute_value
 measures = args.measures
+stage = args.stage
 
 
-removed_targets = ["T1219",
-                   "T1269",
-                   "H1265",
-                   "T1295",
-                   "T1246",
-                   "T1249"
-                   ]
+removed_targets = [
+    "T1219",
+    "T1269",
+    "H1265",
+    "T1295",
+    "T1246",
+]
 
+removed_targets = [
+    # "T1219",
+    "T1246",
+    # "T1269",
+    "T1269v1o_",
+    # "T1295",
+    "T1295o.",
+    # "T1249",
+    # "H1265",
+    "H1265_",
+    "T2270o",
+]
+if stage == "1":
+    removed_targets.extend([
+        "T0",
+        "T2",
+        "H0",
+        "H2"
+    ])
+elif stage == "0":
+    removed_targets.extend([
+        "T1",
+        "T2",
+        "H1",
+        "H2"
+    ])
+elif stage == "2":
+    removed_targets.extend([
+        "T0",
+        "T1",
+        "H0",
+        "H1"
+    ])
+else:
+    print("Invalid stage")
+    sys.exit(1)
 
 result_files = [result for result in os.listdir(
     results_dir) if result.endswith(".results")]
@@ -120,25 +144,7 @@ for remove in to_remove:
     result_files.remove(remove)
 result_files = sorted(result_files)
 print(result_files)
-# breakpoint()
-# print(result_files)
-# print(result_files.__len__())
-
+print(len(result_files))
 for measure in measures:
     group_by_target(results_dir, result_files, out_dir,
                     measure, model, mode, impute_value)
-
-# group_by_target(results_dir, result_files, out_dir,
-#                 "qs_global", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "qs_best", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "ics", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "ips", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "dockq_ave", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "tm_score", model, mode, impute_value)
-# group_by_target(results_dir, result_files, out_dir,
-#                 "lddt", model, mode, impute_value)

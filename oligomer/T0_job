@@ -1,0 +1,27 @@
+#!/bin/bash
+#SBATCH -p 256GB
+#SBATCH -n 48
+#SBATCH --mem=192g
+#SBATCH -t 28-00:00:00
+#SBATCH -o T0_job.log
+#SBATCH -e T0_job.err
+#SBATCH -J T0_job
+
+
+
+MODEL=best
+IMPUTE_VALUE=-2
+MODE=all
+STAGE=0
+
+echo "starting step11_process_new_EU_score.py"
+python step11_process_new_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./group_by_target_EU_new_T0/ &
+wait
+
+echo "starting step20_process_new_interface_score.py"
+python step20_process_new_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./group_by_target_per_interface_T0/ &
+wait
+
+echo "starting step21_bootstrap_sum_new_interface.py"
+python step21_bootstrap_sum_new_interface.py --model $MODEL --impute_value $IMPUTE_VALUE --interface_score_path ./group_by_target_per_interface_T0/  --EU_score_path ./group_by_target_EU_new_T0/ --output_path ./bootstrap_new_interface_T0/ &
+wait
