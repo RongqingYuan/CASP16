@@ -149,6 +149,10 @@ def bootstrap_sum(measures, model, mode,
             # multiply the score_matrix by the weight
             score_matrix = score_matrix * weight_i
             # score_matrix = score_matrix * EU_weight
+
+            # get only T columns
+            score_matrix = score_matrix.loc[:,
+                                            score_matrix.columns.str.startswith("T")]
             score_matrix_sum = score_matrix.sum(axis=1)
             measure_score_dict[measure] = dict(score_matrix_sum)
             data = pd.concat([data, score_matrix], axis=0)
@@ -156,15 +160,53 @@ def bootstrap_sum(measures, model, mode,
             score_file = f"sum_weighted_EU_{measure}-{model}-{mode}-impute_value={impute_value}.csv"
             score_matrix = pd.read_csv(
                 interface_score_path + score_file, index_col=0)
+            # drop the sum column
+            score_matrix = score_matrix.drop(columns="sum")
             score_matrix = score_matrix.reindex(
                 sorted(score_matrix.columns), axis=1)
             weight_i = weight[i]
             # multiply the score_matrix by the weight
             score_matrix = score_matrix * weight_i
             # score_matrix = score_matrix * interface_weight
+
+            # get only T columns
+            score_matrix = score_matrix.loc[:,
+                                            score_matrix.columns.str.startswith("T")]
             score_matrix_sum = score_matrix.sum(axis=1)
             measure_score_dict[measure] = dict(score_matrix_sum)
             data = pd.concat([data, score_matrix], axis=0)
+
+    # T1249_data = pd.DataFrame()
+    # for i in range(len(measures)):
+    #     measure = measures[i]
+    #     if measure in EU_measures:
+    #         score_file = f"group_by_target-T1249o-{measure}-{model}-{mode}-impute_value={impute_value}.csv"
+    #         score_matrix = pd.read_csv(EU_score_path + score_file, index_col=0)
+    #         score_matrix = score_matrix.reindex(
+    #             sorted(score_matrix.columns), axis=1)
+    #         weight_i = weight[i]
+    #         # multiply the score_matrix by the weight
+    #         score_matrix = score_matrix * weight_i
+    #         # score_matrix = score_matrix * EU_weight
+    #         score_matrix_sum = score_matrix.sum(axis=1)
+    #         measure_score_dict[measure] = dict(score_matrix_sum)
+    #         data = pd.concat([data, score_matrix], axis=0)
+    #     elif measure in interface_measures:
+    #         measure = measure.replace("_mean", "")
+    #         if measure == "dockq":
+    #             measure = "dockq_ave"
+    #         score_file = f"group_by_target-T1249o-{measure}-{model}-{mode}-impute_value={impute_value}.csv"
+    #         score_matrix = pd.read_csv(
+    #             EU_score_path + score_file, index_col=0)
+    #         score_matrix = score_matrix.reindex(
+    #             sorted(score_matrix.columns), axis=1)
+    #         weight_i = weight[i]
+    #         # multiply the score_matrix by the weight
+    #         score_matrix = score_matrix * weight_i
+    #         # score_matrix = score_matrix * interface_weight
+    #         score_matrix_sum = score_matrix.sum(axis=1)
+    #         measure_score_dict[measure] = dict(score_matrix_sum)
+    #         data = pd.concat([data, score_matrix], axis=0)
 
     # breakpoint()
     # drop whole column if any value is nan
@@ -172,6 +214,10 @@ def bootstrap_sum(measures, model, mode,
     # # drop column H1236
     # data = data.drop(columns="H1236")
     data = data.T
+    # get rows starts with T
+    # data = data[data.index.str.startswith("T")]
+    print("shape")
+    print(data.shape)
     columns = data.columns
     grouped_columns = data.groupby(columns, axis=1)
     grouped_data = grouped_columns.sum()
@@ -192,27 +238,63 @@ def bootstrap_sum(measures, model, mode,
     groups_plt = [group[2:] for group in groups]
     plt.figure(figsize=(48, 24))
     bottom = [0 for i in range(length)]
+    convert = {"qs_global_mean": "QSglob_mean",
+               "ics_mean": "ICS_mean",
+               "ips_mean": "IPS_mean",
+               "dockq_mean": "DockQ_mean",
+               "tm_score": "TMscore",
+               "lddt": "lDDT"}
     for key in measure_score_dict:
         measure_points = measure_score_dict[key]
         points = [measure_points[group] for group in groups]
-        plt.bar(groups_plt, points, bottom=bottom, label=key, width=0.8)
+        plt.bar(groups_plt, points, bottom=bottom,
+                label=convert[key], width=0.8)
         bottom = [bottom[i] + points[i] for i in range(length)]
     plt.xticks(np.arange(length), groups_plt,
-               rotation=90, fontsize=24, ha='right')
+               rotation=90, fontsize=24)
     plt.yticks(fontsize=24)
     plt.legend(fontsize=32)
     if equal_weight:
         plt.title(
-            f"z-score sum for {measure_type} oligomer EUs with equal weight", fontsize=32)
+            f"z-score sum for {measure_type} oligomer {mode} EUs, {model} models with equal weight", fontsize=32)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_equal_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
     else:
         plt.title(
-            f"z-score sum for {measure_type} oligomer EUs with custom weight", fontsize=32)
+            f"z-score sum for {measure_type} oligomer {mode} EUs, {model} models with custom weight", fontsize=32)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
     # breakpoint()
     #####
+
+    top_n_group = groups[:top_n]
+    top_n_group_plt = groups_plt[:top_n]
+    plt.figure(figsize=(16, 12))
+    bottom = [0 for i in range(top_n)]
+    for key in measure_score_dict:
+        measure_points = measure_score_dict[key]
+        points = [measure_points[group] for group in top_n_group]
+        plt.bar(top_n_group_plt, points, bottom=bottom,
+                label=convert[key], width=0.8)
+        bottom = [bottom[i] + points[i] for i in range(top_n)]
+    plt.xticks(np.arange(top_n), top_n_group_plt,
+               rotation=45, fontsize=20, ha='right')
+    plt.yticks(fontsize=20)
+    # set y tick min to -15
+    if min(bottom) > 0:
+        plt.ylim(-2, max(bottom)+5)
+    # plt.ylim(-5, max(bottom)+5)
+    plt.legend(fontsize=20)
+    if equal_weight:
+        plt.title(
+            f"z-score sum for {measure_type} oligomer {mode} EUs, {model} models with equal weight", fontsize=20)
+        png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_equal_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+    else:
+        plt.title(
+            f"z-score sum for {measure_type} oligomer {mode} EUs, {model} models with custom weight", fontsize=20)
+        png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
 
     # breakpoint()
 
@@ -273,7 +355,7 @@ def bootstrap_sum(measures, model, mode,
     plt.xticks(np.arange(length), groups, rotation=45, fontsize=10)
     plt.yticks(np.arange(length), groups, rotation=0, fontsize=10)
     plt.title(
-        "{} bootstrap result of sum points for {} EUs".format(measure_type, mode), fontsize=20)
+        "{} bootstrap result of sum points for {} EUs, {} models".format(measure_type, mode, model), fontsize=16)
     png_file = f"win_matrix_{measure_type}_{model}_{mode}_n={bootstrap_rounds}_equal_weight={equal_weight}_impute={impute_value}_bootstrap_sum.png"
     plt.savefig(output_path + png_file, dpi=300)
 
@@ -315,14 +397,14 @@ def bootstrap_sum(measures, model, mode,
     ax.set_xticklabels(ax.get_xticklabels(), horizontalalignment='center')
     ax.set_yticklabels(ax.get_yticklabels(), verticalalignment='center')
     plt.xticks(np.arange(top_n), top_n_id,
-               rotation=45, fontsize=12, ha='right')
-    plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=12)
+               rotation=45, fontsize=16, ha='right')
+    plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=16)
     if equal_weight:
-        plt.title("bootstrap result of {} score for {} top {} groups, with equal weight".format(
-            measure_type, mode, top_n), fontsize=18)
+        plt.title("oligomer bootstrap result for {} targets, {} models, top {} groups".format(
+            mode, model, top_n), fontsize=16)
     else:
-        plt.title("bootstrap result of {} score for {} top {} groups".format(
-            measure_type, mode, top_n), fontsize=18)
+        plt.title("oligomer bootstrap result for {} targets, {} models, top {} groups".format(
+            mode, model, top_n), fontsize=16)
     png_top_file = f"win_matrix_{measure_type}_{model}_{mode}_n={bootstrap_rounds}_equal_weight={equal_weight}_impute={impute_value}_top_{top_n}_bootstrap_sum.png"
     plt.savefig(output_path + png_top_file, dpi=300)
 
