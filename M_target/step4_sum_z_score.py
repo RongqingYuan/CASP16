@@ -42,7 +42,6 @@ def get_group_by_target(csv_list, csv_path, out_path, sum_path,
         grouped = data_tmp.groupby(["group"])
 
         grouped = pd.DataFrame(grouped[feature].max())
-        # grouped.index = grouped.index.droplevel(1)
         grouped[feature] = grouped[feature].astype(float)
         grouped = grouped.sort_values(by=feature, ascending=False)
         initial_z = (grouped - grouped.mean()) / grouped.std()
@@ -67,8 +66,8 @@ def get_group_by_target(csv_list, csv_path, out_path, sum_path,
     # nan_values = data.isnull().sum().sum()
     # print(f"Number of nan values: {nan_values}")
 
-    # sort columns by alphabetical order
     data = data.reindex(sorted(data.columns), axis=1)
+    data = data.sort_index()
     data_columns = data.columns
     data.to_csv(
         out_path + f"impute={impute_value}/" + f"group_by_target-{feature}-{model}-{mode}.csv")
@@ -83,7 +82,7 @@ def get_group_by_target(csv_list, csv_path, out_path, sum_path,
     # assign EU_weight based on the target_weight
     EU_weight = {EU: target_weight[EU.split("-")[0]]
                  for EU in data_columns}
-
+    # actually, the EU_weight here is not useful at all because it is all 1
     data["sum"] = data.sum(axis=1)
     data = data.sort_values(by="sum", ascending=False)
     data.to_csv(
@@ -95,99 +94,14 @@ def get_group_by_target(csv_list, csv_path, out_path, sum_path,
     data = data.sort_values(by="sum", ascending=False)
     data.to_csv(
         sum_path + f"impute={impute_value}/" + f"sum_{feature}-{model}-{mode}.csv")
-
+    # sort columns by alphabetical order
     data_raw = data_raw.reindex(sorted(data_raw.columns), axis=1)
+    # sort rows by alphabetical order
+    data_raw = data_raw.sort_index()
     data_raw_csv = f"groups_by_targets_for-raw-{feature}-{model}-{mode}.csv"
     data_raw.to_csv
     data_raw.to_csv(
         out_path + "raw/" + data_raw_csv)
-
-
-hard_group = [
-    "T1207-D1",
-    "T1210",
-    "T1220s1",
-    "T1226-D1",
-    "T1228-D3-all",
-    "T1271s1-D1",
-]
-
-medium_group = [
-    "T1201",
-    "T1212-D1",
-    "T1218-D1",
-    "T1218-D2",
-    "T1227s1-D1",
-    "T1228-D1-all",
-    "T1228-D4-all",
-    "T1230s1-D1",
-    "T1237-D1",
-    "T1239-D1-all",
-    "T1239-D3-all",
-    "T1243-D1",
-    "T1244s1-D1",
-    "T1245s2-D1",
-    "T1249v1-D1",
-    "T1257",
-    "T1266-D1",
-    "T1267s1-D1",
-    "T1267s1-D2",
-    "T1267s2-D1",
-    "T1269-D1",
-    "T1269-D2",
-    "T1269-D3",
-    "T1270-D1",
-    "T1270-D2",
-    "T1271s2-D1",
-    "T1271s3-D1",
-    "T1271s4-D1",
-    "T1271s5-D1",
-    "T1271s5-D2",
-    "T1271s7-D1",
-    "T1271s8-D1",
-    "T1271s8-D2",
-    "T1272s2-D1",
-    "T1272s6-D1",
-    "T1272s8-D1",
-    "T1272s9-D1",
-    "T1279-D2",
-    "T1284-D1",
-    "T1295-D1",
-    "T1295-D3",
-    "T1298-D1",
-    "T1298-D2",
-]
-
-easy_group = [
-    "T1206-D1",
-    "T1208s1-D1",
-    "T1208s2-D1",
-    "T1218-D3",
-    "T1228-D2-all",
-    "T1231-D1",
-    "T1234-D1",
-    "T1235-D1",
-    "T1239-D2-all",
-    "T1239-D4-all",
-    "T1240-D1",
-    "T1240-D2",
-    "T1245s1-D1",
-    "T1246-D1",
-    "T1259-D1",
-    "T1271s6-D1",
-    "T1274-D1",
-    "T1276-D1",
-    "T1278-D1",
-    "T1279-D1",
-    "T1280-D1",
-    "T1292-D1",
-    "T1294-D1-all",
-    "T1295-D2",
-    "T1299-D1",
-]
-print(len(easy_group))
-print(len(medium_group))
-print(len(hard_group))
 
 
 parser = argparse.ArgumentParser(description="options for sum z-score")
@@ -209,35 +123,28 @@ out_path = args.out_path
 model = args.model
 mode = args.mode
 impute_value = args.impute_value
-# stage = args.stage
-# if stage == "1":
-#     csv_list = [txt for txt in os.listdir(
-#         csv_path) if txt.endswith(".csv") and txt.startswith("T1")]
-# elif stage == "0":
-#     csv_list = [txt for txt in os.listdir(
-#         csv_path) if txt.endswith(".csv") and txt.startswith("T0")]
-# elif stage == "2":
-#     csv_list = [txt for txt in os.listdir(
-#         csv_path) if txt.endswith(".csv") and txt.startswith("T2")]
-csv_list = [txt for txt in os.listdir(
-    csv_path) if txt.endswith(".csv") and txt.startswith("M1")]
+stage = args.stage
+if stage == "1":
+    csv_list = [txt for txt in os.listdir(
+        csv_path) if txt.endswith(".csv") and txt.startswith("M1")]
+elif stage == "0":
+    csv_list = [txt for txt in os.listdir(
+        csv_path) if txt.endswith(".csv") and txt.startswith("M0")]
+elif stage == "2":
+    csv_list = [txt for txt in os.listdir(
+        csv_path) if txt.endswith(".csv") and txt.startswith("M2")]
+# csv_list = [txt for txt in os.listdir(
+#     csv_path) if txt.endswith(".csv") and txt.startswith("M1")]
 csv_list = sorted(csv_list)
 
-
-if mode == "hard":
-    csv_list = [csv for csv in csv_list if csv.split(
-        ".")[0] in hard_group]
-    print(len(csv_list))
-elif mode == "medium":
-    csv_list = [csv for csv in csv_list if csv.split(
-        ".")[0] in medium_group]
-    print(len(csv_list))
-elif mode == "easy":
-    csv_list = [csv for csv in csv_list if csv.split(
-        ".")[0] in easy_group]
-    print(len(csv_list))
-elif mode == "all":
-    pass
+bad_targets = ["M1268", "M1297"]
+remove = []
+for file in csv_list:
+    for target in bad_targets:
+        if file.startswith(target):
+            remove.append(file)
+for target in remove:
+    csv_list.remove(target)
 
 for csv in csv_list:
     print(csv)

@@ -125,7 +125,7 @@ def bootstrap_sum(measures, model, mode,
     plt.legend(fontsize=20)
     if equal_weight:
         plt.title(
-            f"sum z-score for {measure_type} monomer, {model} models, {mode} EUs with equal weight", fontsize=20)
+            f"sum z-score for hybrid targets, original score, equal weight", fontsize=20)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_equal_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
     else:
@@ -144,11 +144,10 @@ def bootstrap_sum(measures, model, mode,
     groups = list(scores.keys())
     length = len(groups)
     win_matrix = [[0 for i in range(length)] for j in range(length)]
-    # get the target list, it is the first element when split T1_data.index
+    # get the target list, it is the first element when split by "-"
     targets = grouped_data.index.map(lambda x: x.split("-")[0])
     grouped_data["target"] = targets
 
-    # now do the bootstrapping
     for r in range(bootstrap_rounds):
         grouped = grouped_data.groupby('target')
         data_bootstrap = grouped.apply(lambda x: x.sample(
@@ -220,7 +219,7 @@ def bootstrap_sum(measures, model, mode,
                rotation=45, fontsize=18, ha='right')
     plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=18)
     if equal_weight:
-        plt.title("bootstrap result of {} score for {} models, {} targets, top {} groups, equal weight".format(
+        plt.title("bootstrap result for hybrid target, original score, equal weight".format(
             measure_type, model, mode, top_n), fontsize=16, pad=20)
     else:
         plt.title("bootstrap result of {} score for {} models, {} targets, top {} groups".format(
@@ -275,11 +274,11 @@ measures = [
     "IPS",
     "QSglob",
     # "QSbest",
-    # "lDDT",
     # "GDT_TS",
     # "RMSD",
-    # "TMscore",
     "GlobDockQ",
+    "TMscore",
+    "lDDT",
     # "BestDockQ"
 ]
 bootstrap_sum(measures=measures, model=model, mode=mode,

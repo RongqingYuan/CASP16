@@ -14,8 +14,6 @@ stage = args.stage
 # monomer_path = "/home2/s439906/data/CASP16/monomers/"
 # monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_8/"
 # monomer_path = "/home2/s439906/data/CASP16/monomers_Sep_10/"
-
-
 monomer_path = "/home2/s439906/data/CASP16/hybrid_Oct_10/"
 monomer_list = [txt for txt in os.listdir(
     monomer_path) if txt.endswith(".txt")]
@@ -69,6 +67,7 @@ for monomer in monomer_list:
         sys.exit()
 
     # BUG 2 another strange bug. Some index line does not have -D* as the suffix. We need to fill them out
+    # here this part I just want to be consistent with the previous code and the following code
     if "-D" in monomer:
         domain_id = monomer.split(".")[0].split("-")[1]
         data.index = data.index.map(
@@ -86,20 +85,7 @@ for monomer in monomer_list:
     # fill - with np.nan
     data = data.replace("-", np.nan)
     data = data.astype(float)
-
-    # data = data.drop(["GR#", "#"], axis=1)
-    # data = data.drop(["DipDiff", "BBscore", "SCscore"], axis=1)
-    # data = data.drop(["RANK"], axis=1)
-
-    # data.replace("N/A", np.nan, inplace=True)
-    # data.replace("-", np.nan, inplace=True)
-    # data = data.astype(float)
-    # inverse_columns = ["RMS_CA", "RMS_ALL", "err",
-    #                    "RMSD[L]", "MolPrb_Score", "FlexE", "MP_clash", "MP_rotout", "MP_ramout"]
-    # data[inverse_columns] = -data[inverse_columns]
-
     initial_z = (data - data.mean()) / data.std()
-
     new_z_score = pd.DataFrame(index=data.index, columns=data.columns)
     for column in data.columns:
         filtered_data = data[column][initial_z[column] >= -2]
