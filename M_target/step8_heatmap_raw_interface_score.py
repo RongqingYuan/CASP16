@@ -103,7 +103,7 @@ def plot_heatmap(measure, model, mode,
     cmap.set_bad(color='gray')  # set the masked area to gray
 
     # set up the figure and gridspec
-    fig = plt.figure(figsize=(35, 20))
+    fig = plt.figure(figsize=(35, 22))
     gs = GridSpec(1, 2, width_ratios=[4, 1], wspace=0.1)
 
     # plot the heatmap
@@ -112,7 +112,11 @@ def plot_heatmap(measure, model, mode,
     ax0.set_yticklabels(
         [f'{i}' for i in sorted_indices], rotation=0, fontsize=16)  # use the same order as the row sum
     ax0.set_xticklabels(sorted_heatmap_data.columns, rotation=90)
-    ax0.set_title(f"{measure} raw score", fontsize=6)
+    # set x tick font size
+    ax0.tick_params(axis='x', labelsize=14)
+    # set y tick font size
+    ax0.tick_params(axis='y', labelsize=16)
+    ax0.set_title(f"{measure} raw score", fontsize=24)
     # set the scale bar font size
     cbar = ax0.collections[0].colorbar
     cbar.ax.tick_params(labelsize=16)
@@ -136,7 +140,7 @@ def plot_heatmap(measure, model, mode,
     ax1.tick_params(axis='y', labelsize=16)
     ax1.invert_yaxis()  # flip the y-axis
     ax1.set_xlabel("Sum")
-    ax1.set_title("Row Sum")
+    ax1.set_title("Group sum score", fontsize=24)
 
     # save the figure
     plt.tight_layout()

@@ -8,20 +8,20 @@ from matplotlib.colors import ListedColormap
 from matplotlib.gridspec import GridSpec
 
 
-def plot_heatmap(measures, model, mode,
+def plot_heatmap(measure, model, mode,
                  score_path, interface_score_path, output_path="./bootstrap_EU/",
                  impute_value=-2, weight=None, bootstrap_rounds=1000,  top_n=25):
     EU_measures = [
-        # "ICS(F1)",
-        # "IPS",
-        # "QSglob",
-        # "QSbest",
-        # "GDT_TS",
-        # "RMSD",
+        "ICS(F1)",
+        "IPS",
+        "QSglob",
+        "QSbest",
+        "GDT_TS",
+        "RMSD",
         "GlobDockQ",
         "TMscore",
         "lDDT",
-        # "BestDockQ"
+        "BestDockQ"
     ]
 
     interface_measures = [
@@ -35,63 +35,70 @@ def plot_heatmap(measures, model, mode,
         "prot_per_interface_ics_trimmed",
         "prot_per_interface_ips_trimmed",
     ]
-    if isinstance(measures, str):
-        if measures == "CASP15":
-            measures = ['LDDT', 'CAD_AA', 'SphGr',
-                        'MP_clash', 'RMS_CA',
-                        'GDT_HA', 'QSE', 'reLLG_const']
-            measure_type = "CASP15"
-        elif measures == "CASP16":
-            measures = ['GDT_HA', 'GDC_SC',
-                        'AL0_P', 'SphGr',
-                        'CAD_AA', 'QSE', 'LDDT',
-                        'MolPrb_Score',
-                        'reLLG_const']
-            measure_type = "CASP16"
-        else:
-            print("measures should be a list of strings, or 'CASP15' / 'CASP16'")
-            return 1
-    else:
-        measure_type = "custom"
-    measures = list(measures)
-    if weight is None:
-        weight = [1/len(measures)] * len(measures)
-    # equal_weight = len(set(weight)) == 1
-    assert len(measures) == len(weight)
+    # if isinstance(measures, str):
+    #     if measures == "CASP15":
+    #         measures = ['LDDT', 'CAD_AA', 'SphGr',
+    #                     'MP_clash', 'RMS_CA',
+    #                     'GDT_HA', 'QSE', 'reLLG_const']
+    #         measure_type = "CASP15"
+    #     elif measures == "CASP16":
+    #         measures = ['GDT_HA', 'GDC_SC',
+    #                     'AL0_P', 'SphGr',
+    #                     'CAD_AA', 'QSE', 'LDDT',
+    #                     'MolPrb_Score',
+    #                     'reLLG_const']
+    #         measure_type = "CASP16"
+    #     else:
+    #         print("measures should be a list of strings, or 'CASP15' / 'CASP16'")
+    #         return 1
+    # else:
+    #     measure_type = "custom"
+    # measures = list(measures)
+    # if weight is None:
+    #     weight = [1/len(measures)] * len(measures)
+    # # equal_weight = len(set(weight)) == 1
+    # assert len(measures) == len(weight)
 
-    # to get the mask
-    measure = measures[0]
+    # # # to get the mask
+    # # measure = measures[0]
+    # # raw_path = score_path + "raw/"
+    # # raw_file = raw_path + \
+    # #     f"groups_by_targets_for-raw-{measure}-{model}-{mode}.csv"
+    # # raw_data = pd.read_csv(raw_file, index_col=0)
+    # # mask = raw_data.isna()
+
+    # # # get the same shape of data
+    # # score_path = score_path + f"impute={impute_value}/"
+    # # score_file = f"group_by_target-{measure}-{model}-{mode}.csv"
+    # # data_tmp = pd.read_csv(score_path + score_file, index_col=0)
+    # # heatmap_data = pd.DataFrame(
+    # #     0, index=data_tmp.index, columns=data_tmp.columns)
+
+    heatmap_data = None
+    if measure in EU_measures:
+        score_path = score_path
+        score_file = f"group_by_target-{measure}-{model}-{mode}.csv"
+        score_matrix = pd.read_csv(score_path + score_file, index_col=0)
+        heatmap_data = score_matrix
+    elif measure in interface_measures:
+        score_file = f"{measure}-{model}-{mode}-impute_value={impute_value}-weighted-sum.csv"
+        score_matrix = pd.read_csv(
+            interface_score_path + score_file, index_col=0)
+        heatmap_data = score_matrix
+    # mask = heatmap_data.isna()
+
+    measure_mask = "IPS"
     raw_path = score_path + "raw/"
     raw_file = raw_path + \
-        f"groups_by_targets_for-raw-{measure}-{model}-{mode}.csv"
+        f"groups_by_targets_for-raw-{measure_mask}-{model}-{mode}.csv"
     raw_data = pd.read_csv(raw_file, index_col=0)
     mask = raw_data.isna()
 
-    # get the same shape of data
-    score_path = score_path + f"impute={impute_value}/"
-    score_file = f"group_by_target-{measure}-{model}-{mode}.csv"
-    data_tmp = pd.read_csv(score_path + score_file, index_col=0)
-    heatmap_data = pd.DataFrame(
-        0, index=data_tmp.index, columns=data_tmp.columns)
-
-    for i in range(len(measures)):
-        measure = measures[i]
-        if measure in EU_measures:
-            score_path = score_path
-            score_file = f"group_by_target-{measure}-{model}-{mode}.csv"
-            score_matrix = pd.read_csv(score_path + score_file, index_col=0)
-            weight_i = weight[i]
-            score_matrix = score_matrix * weight_i
-            heatmap_data = heatmap_data + score_matrix
-        elif measure in interface_measures:
-            score_file = f"{measure}-{model}-{mode}-impute_value={impute_value}-weighted-sum.csv"
-            score_matrix = pd.read_csv(
-                interface_score_path + score_file, index_col=0)
-            weight_i = weight[i]
-            score_matrix = score_matrix * weight_i
-            heatmap_data = heatmap_data + score_matrix
-    # drop all columns any value is nan
-    heatmap_data = heatmap_data.dropna(axis=1, how='any')
+    #########
+    mask = mask.drop('M1268', axis=1)
+    mask = mask.drop('M1297', axis=1)
+    heatmap_data = heatmap_data.drop('sum', axis=1)
+    #########
     # breakpoint()
     sum = heatmap_data.sum(axis=1)
     sorted_indices = sum.sort_values(ascending=False).index
@@ -100,7 +107,6 @@ def plot_heatmap(measures, model, mode,
     sorted_sum = sum.loc[sorted_indices].reset_index(drop=True)
     sorted_mask = pd.DataFrame(
         mask, index=heatmap_data.index).loc[sorted_indices].reset_index(drop=True)
-
     # use mask to mask the data. will be used for heatmap
     masked_data = sorted_heatmap_data.copy()
     masked_data[sorted_mask] = np.nan
@@ -111,22 +117,19 @@ def plot_heatmap(measures, model, mode,
     cmap.set_bad(color='gray')  # set the masked area to gray
 
     # set up the figure and gridspec
-    fig = plt.figure(figsize=(20, 15))
-    gs = GridSpec(1, 2, width_ratios=[4, 1], wspace=0.3)
+    fig = plt.figure(figsize=(35, 20))
+    gs = GridSpec(1, 2, width_ratios=[4, 1], wspace=0.1)
 
     # plot the heatmap
     ax0 = fig.add_subplot(gs[0])
     sns.heatmap(masked_data, cmap=cmap, cbar=True, ax=ax0)
     ax0.set_yticklabels(
-        [f'{i}' for i in sorted_indices], rotation=0)  # use the same order as the row sum
+        [f'{i}' for i in sorted_indices], rotation=0, fontsize=16)  # use the same order as the row sum
     ax0.set_xticklabels(sorted_heatmap_data.columns, rotation=90)
-
-    # set x tick font size
-    ax0.tick_params(axis='x', labelsize=16)
-    # set y tick font size
-    ax0.tick_params(axis='y', labelsize=16)
-    ax0.set_title(
-        "Heatmap for sum z-scores of interface score, equal weight", fontsize=20)
+    ax0.set_title(f"{measure} raw score large interface", fontsize=24)
+    # set the scale bar font size
+    cbar = ax0.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=16)
 
     # plot the row sum
     ax1 = fig.add_subplot(gs[1], sharey=ax0)
@@ -146,13 +149,13 @@ def plot_heatmap(measures, model, mode,
     # set y tick font size
     ax1.tick_params(axis='y', labelsize=16)
     ax1.invert_yaxis()  # flip the y-axis
-    ax1.set_xlabel("Sum", fontsize=16)
-    ax1.set_title("Group sum z-scores", fontsize=20)
+    ax1.set_xlabel("Sum")
+    ax1.set_title("Row Sum", fontsize=24)
 
     # save the figure
-    # plt.tight_layout()
+    plt.tight_layout()
     plt.show()
-    plt.savefig(output_path + f"heatmap_{measure_type}_{model}_{mode}_impute={impute_value}_equal_weight.png",
+    plt.savefig(output_path + f"heatmap_{measure}_{model}_{mode}_per_target.png",
                 dpi=300)
 
 
@@ -161,15 +164,13 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--score_path", type=str,
                     default="./group_by_target_EU/")
 parser.add_argument("--interface_score_path", type=str,
-                    default="./interface_score_v1/")
+                    default="./interface_score_v1_large/")
 parser.add_argument("--measures", type=str, default="CASP16")
 parser.add_argument("--model", type=str, default="best")
 parser.add_argument("--mode", type=str, default="all")
 parser.add_argument("--output_path", type=str,
-                    # default="./heatmap_interface/"
-                    default="./heatmap_prot_nucl_interface/"
-                    # default="./heatmap_prot_prot_interface/"
-                    )
+                    default="./heatmap_interface_raw_large/")
+# default="./heatmap_prot_nucl_interface/")
 parser.add_argument("--impute_value", type=int, default=-2)
 parser.add_argument("--weight", type=float, nargs='+', default=None)
 parser.add_argument("--bootstrap_rounds", type=int, default=1000)
@@ -212,25 +213,26 @@ EU_measures = [
     # "QSbest",
     # "GDT_TS",
     # "RMSD",
-    "GlobDockQ",
-    "TMscore",
-    "lDDT",
+    # "GlobDockQ",
+    # "TMscore",
+    # "lDDT",
     # "BestDockQ"
 ]
 
 interface_measures = [
     # "prot_nucl_qs_global",
 
-    "prot_nucl_per_interface_qs_global",
     "prot_nucl_per_interface_ics_trimmed",
     "prot_nucl_per_interface_ips_trimmed",
+    # "prot_nucl_per_interface_qs_global",
 
+    "prot_per_interface_ics_trimmed",
+    "prot_per_interface_ips_trimmed",
     # "prot_per_interface_qs_global",
-    # "prot_per_interface_ics_trimmed",
-    # "prot_per_interface_ips_trimmed",
 ]
 
 measures = EU_measures + interface_measures
-plot_heatmap(measures=measures, model=model, mode=mode,
-             score_path=score_path, interface_score_path=interface_score_path, output_path=output_path,
-             impute_value=impute_value, weight=None, bootstrap_rounds=bootstrap_rounds, top_n=top_n)
+for measure in measures:
+    plot_heatmap(measure=measure, model=model, mode=mode,
+                 score_path=score_path, interface_score_path=interface_score_path, output_path=output_path,
+                 impute_value=impute_value, weight=None, bootstrap_rounds=bootstrap_rounds, top_n=top_n)
