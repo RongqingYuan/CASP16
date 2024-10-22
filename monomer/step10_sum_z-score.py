@@ -59,20 +59,19 @@ def get_group_by_target(csv_list, csv_path, out_path, sum_path,
 
         grouped = grouped.rename(columns={feature: csv_file.split(".")[0]})
         data_raw = pd.concat([data_raw, grouped], axis=1)
+    # breakpoint()
+
     # impute data again with impute_value, because some group may not submit all targets
     data = data.fillna(impute_value)
-
     # nan_values = data.isnull().sum().sum()
-    # if nan_values > 0:
-    #     breakpoint()
-    #     raise ValueError(
-    #         "There are still NaN values in the data. Please check the data again.")
+    # print(f"Number of nan values: {nan_values}")
 
-    # sort columns by alphabetical order
     data = data.reindex(sorted(data.columns), axis=1)
-    data_columns = data.columns
+    data = data.sort_index()
     data.to_csv(
         out_path + f"impute={impute_value}/" + f"group_by_target-{feature}-{model}-{mode}.csv")
+
+    data_columns = data.columns
     target_count = {}
     for EU in data_columns:
         target = EU.split("-")[0]
@@ -98,6 +97,7 @@ def get_group_by_target(csv_list, csv_path, out_path, sum_path,
         sum_path + f"impute={impute_value}/" + f"sum_{feature}-{model}-{mode}.csv")
 
     data_raw = data_raw.reindex(sorted(data_raw.columns), axis=1)
+    data_raw = data_raw.sort_index()
     data_raw_csv = f"groups_by_targets_for-raw-{feature}-{model}-{mode}.csv"
     data_raw.to_csv
     data_raw.to_csv(
@@ -189,28 +189,6 @@ easy_group = [
 print(len(easy_group))
 print(len(medium_group))
 print(len(hard_group))
-
-# # csv_path = "./monomer_data_aug_30/processed/EU/"
-# # csv_path = "./monomer_data_Sep_10/processed/EU/"
-# # csv_path = "./monomer_data_Sep_10/raw_data/EU/"
-# csv_path = "./monomer_data_Sep_15_EU/raw_data/"
-# csv_list = [txt for txt in os.listdir(
-#     csv_path) if txt.endswith(".csv") and txt.startswith("T1")]
-# out_path = "./group_by_target_EU/"
-# sum_path = "./sum_EU/"
-# if not os.path.exists(out_path):
-#     os.makedirs(out_path)
-# if not os.path.exists(sum_path):
-#     os.makedirs(sum_path)
-
-# # model = "first"
-# model = "best"
-
-# # mode = "easy"
-# # mode = "medium"
-# # mode = "hard"
-# mode = "all"
-# impute_value = -2
 
 
 parser = argparse.ArgumentParser(description="options for sum z-score")

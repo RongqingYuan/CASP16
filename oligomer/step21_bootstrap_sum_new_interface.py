@@ -1,7 +1,6 @@
 import argparse
 import pandas as pd
 import numpy as np
-import sys
 import os
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -196,10 +195,36 @@ def bootstrap_sum(measures, model, mode,
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
 
+    top_n_group_1 = groups[:10]
+    top_n_group_plt_1 = groups_plt[:10]
+    index = np.arange(10)
+    bar_width = 0.9 / len(measures)
+    plt.figure(figsize=(45, 15))
+    for i in range(len(measures)):
+        measure = measures[i]
+        print(index + bar_width * i)
+        print([measure_score_dict[measure][group] for measure in measures])
+        plt.bar(index + bar_width * i, [measure_score_dict[measure][group] for group in top_n_group_1],
+                bar_width, label=measure)
+    plt.xticks(index + bar_width * (len(measures) - 1) /
+               2, top_n_group_plt_1, fontsize=40)
+    plt.yticks(fontsize=40)
+    plt.legend(fontsize=25)
+    if equal_weight:
+        plt.title(
+            f"sum z-score for {measure_type} monomer, {model} models, {mode} EUs with equal weight", fontsize=40)
+        png_file = f"individual_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_equal_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+    else:
+        plt.title(
+            f"weighted sum z-score for {measure_type} monomer, {model} models, {mode} EUs", fontsize=40)
+        png_file = f"individual_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+
+    breakpoint()
     # use the above code to get a initial ranking of the groups.
     # then generate new groups list using the ranking
     # then do bootstrapping
-
     sum = grouped_data.sum(axis=0)
     scores = dict(sum)
     scores = dict(sorted(scores.items(), key=lambda x: x[1], reverse=True))
@@ -288,18 +313,18 @@ def bootstrap_sum(measures, model, mode,
     plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=16)
     if equal_weight:
         plt.title("oligomer bootstrap result for {} targets, {} models, top {} groups".format(
-            mode, model, top_n), fontsize=16)
+            mode, model, top_n), fontsize=16, pad=20)
     else:
         plt.title("oligomer bootstrap result for {} targets, {} models, top {} groups".format(
-            mode, model, top_n), fontsize=16)
+            mode, model, top_n), fontsize=16, pad=20)
     png_top_file = f"win_matrix_{measure_type}_{model}_{mode}_n={bootstrap_rounds}_equal_weight={equal_weight}_impute={impute_value}_top_{top_n}_bootstrap_sum.png"
     plt.savefig(output_path + png_top_file, dpi=300)
 
 
 parser = argparse.ArgumentParser(
     description="options for bootstrapping sum of z-scores")
-parser.add_argument("--measures", type=list, default=["qs_global_mean", "ics_mean",
-                                                      "ips_mean", "dockq_mean", "tm_score", "lddt"])
+parser.add_argument("--measures", type=list, default=["qs_global_mean", "ics_mean", "ips_mean",
+                                                      "dockq_mean", "tm_score", "lddt"])
 parser.add_argument("--model", type=str, default="best")
 parser.add_argument("--mode", type=str, default="all")
 parser.add_argument("--interface_score_path", type=str,

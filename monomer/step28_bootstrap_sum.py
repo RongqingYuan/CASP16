@@ -108,6 +108,7 @@ def bootstrap_sum(measures, model, mode,
 
     top_n_group = groups[:top_n]
     top_n_group_plt = groups_plt[:top_n]
+
     plt.figure(figsize=(16, 12))
     bottom = [0 for i in range(top_n)]
     for key in measure_score_dict:
@@ -124,13 +125,39 @@ def bootstrap_sum(measures, model, mode,
     plt.legend(fontsize=20)
     if equal_weight:
         plt.title(
-            f"sum z-score for {measure_type} monomer, {model} models, {mode} EUs with equal weight", fontsize=20)
+            f"z-score for each measure for {measure_type} monomer, {model} models, {mode} EUs", fontsize=20)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_equal_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
     else:
         plt.title(
-            f"weighted sum z-score for {measure_type} monomer, {model} models, {mode} EUs", fontsize=20)
+            f"z-score for each measure for {measure_type} monomer, {model} models, {mode} EUs", fontsize=20)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+
+    top_n_group_1 = groups[:10]
+    top_n_group_plt_1 = groups_plt[:10]
+    index = np.arange(10)
+    bar_width = 0.9 / len(measures)
+    plt.figure(figsize=(45, 15))
+    for i in range(len(measures)):
+        measure = measures[i]
+        print(index + bar_width * i)
+        print([measure_score_dict[measure][group] for measure in measures])
+        plt.bar(index + bar_width * i, [measure_score_dict[measure][group] for group in top_n_group_1],
+                bar_width, label=measure)
+    plt.xticks(index + bar_width * (len(measures) - 1) /
+               2, top_n_group_plt_1, fontsize=40)
+    plt.yticks(fontsize=40)
+    plt.legend(fontsize=25)
+    if equal_weight:
+        plt.title(
+            f"sum z-score for {measure_type} monomer, {model} models, {mode} EUs with equal weight", fontsize=40)
+        png_file = f"individual_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_equal_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+    else:
+        plt.title(
+            f"weighted sum z-score for {measure_type} monomer, {model} models, {mode} EUs", fontsize=40)
+        png_file = f"individual_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
 
     sum = grouped_data.sum(axis=0)
@@ -154,11 +181,9 @@ def bootstrap_sum(measures, model, mode,
             n=1)).sample(n=len(grouped), replace=True)
         data_bootstrap = data_bootstrap.sort_index()  # not necessary,just to look nice
         data_bootstrap = data_bootstrap.drop(columns='target')
-        # breakpoint()
         sum = data_bootstrap.sum(axis=0)
         scores = dict(sum)
         scores = dict(sorted(scores.items(), key=lambda x: x[1], reverse=True))
-        # bootstrap_points = {}
         for i in range(length):
             for j in range(length):
                 if i == j:
@@ -222,10 +247,10 @@ def bootstrap_sum(measures, model, mode,
     plt.yticks(np.arange(top_n), top_n_id, rotation=0, fontsize=18)
     if equal_weight:
         plt.title("bootstrap result of {} score for {} models, {} targets, top {} groups, equal weight".format(
-            measure_type, model, mode, top_n), fontsize=16)
+            measure_type, model, mode, top_n), fontsize=16, pad=20)
     else:
         plt.title("bootstrap result of {} score for {} models, {} targets, top {} groups".format(
-            measure_type, model, mode, top_n), fontsize=16)
+            measure_type, model, mode, top_n), fontsize=16, pad=20)
     png_top_file = f"win_matrix_{measure_type}_{model}_{mode}_n={bootstrap_rounds}_equal_weight={equal_weight}_impute={impute_value}_top_{top_n}_bootstrap_sum.png"
     plt.savefig(output_path + png_top_file, dpi=300)
 
@@ -242,7 +267,7 @@ parser.add_argument("--weight", type=float, nargs='+', default=None)
 parser.add_argument("--bootstrap_rounds", type=int, default=1000)
 parser.add_argument("--top_n", type=int, default=25)
 parser.add_argument("--equal_weight", action="store_true")
-
+parser.add_argument("--stage", type=str, default="1")
 args = parser.parse_args()
 score_path = args.score_path
 measures = args.measures
@@ -254,6 +279,7 @@ weight = args.weight
 bootstrap_rounds = args.bootstrap_rounds
 top_n = args.top_n
 equal_weight = args.equal_weight
+stage = args.stage
 if not os.path.exists(output_path):
     os.makedirs(output_path)
 if equal_weight:

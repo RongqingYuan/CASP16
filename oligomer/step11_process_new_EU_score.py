@@ -50,23 +50,27 @@ def group_by_target(results_dir, result_files, out_dir, feature, model, mode, im
         data_raw = pd.concat([data_raw, grouped], axis=1)
 
     data = data.fillna(impute_value)
+    data = data.reindex(sorted(data.columns), axis=1)
+    data = data.sort_index()
+
     data_file = f"group_by_target-{feature}-{model}-{mode}-impute_value={impute_value}.csv"
     data.to_csv(out_dir + data_file)
-
-    data_raw_file = f"group_by_target_raw-{feature}-{model}-{mode}-impute_value={impute_value}.csv"
-    data_raw.to_csv(out_dir + data_raw_file)
 
     data["sum"] = data.sum(axis=1)
     data = data.sort_values(by="sum", ascending=False)
     sum_data_file = f"sum_{feature}-{model}-{mode}-impute_value={impute_value}.csv"
     data.to_csv(out_dir + sum_data_file)
 
+    data_raw = data_raw.reindex(sorted(data_raw.columns), axis=1)
+    data_raw = data_raw.sort_index()
+    data_raw_file = f"group_by_target_raw-{feature}-{model}-{mode}-impute_value={impute_value}.csv"
+    data_raw.to_csv(out_dir + data_raw_file)
+
 
 parser = argparse.ArgumentParser(
     description="options for data processing")
 parser.add_argument("--measures", type=list,
                     default=["qs_global", "qs_best", "ics", "ips", "dockq_ave", "tm_score", "lddt"])
-
 parser.add_argument("--results_dir", type=str,
                     default="/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/")
 parser.add_argument("--out_dir", type=str,
@@ -75,7 +79,13 @@ parser.add_argument("--model", type=str, default="best")
 parser.add_argument("--mode", type=str, default="all")
 parser.add_argument("--impute_value", type=int, default=-2)
 parser.add_argument("--stage", type=str, default="1")
-
+parser.add_argument("--bad_targets", nargs="+", default=[
+    "T1246",
+    "T1269v1o_",
+    "T1295o.",
+    "H1265_",
+    "T2270o",
+])
 
 args = parser.parse_args()
 results_dir = args.results_dir
@@ -85,44 +95,44 @@ mode = args.mode
 impute_value = args.impute_value
 measures = args.measures
 stage = args.stage
+bad_targets = args.bad_targets
 
+# removed_targets = [
+#     "T1219",
+#     "T1269",
+#     "H1265",
+#     "T1295",
+#     "T1246",
+# ]
 
-removed_targets = [
-    "T1219",
-    "T1269",
-    "H1265",
-    "T1295",
-    "T1246",
-]
-
-removed_targets = [
-    # "T1219",
-    "T1246",
-    # "T1269",
-    "T1269v1o_",
-    # "T1295",
-    "T1295o.",
-    # "T1249",
-    # "H1265",
-    "H1265_",
-    "T2270o",
-]
+# removed_targets = [
+#     # "T1219",
+#     "T1246",
+#     # "T1269",
+#     "T1269v1o_",
+#     # "T1295",
+#     "T1295o.",
+#     # "T1249",
+#     # "H1265",
+#     "H1265_",
+#     "T2270o",
+# ]
 if stage == "1":
-    removed_targets.extend([
+    bad_targets.extend([
         "T0",
         "T2",
         "H0",
         "H2"
     ])
 elif stage == "0":
-    removed_targets.extend([
+    bad_targets.extend([
         "T1",
         "T2",
         "H1",
         "H2"
     ])
 elif stage == "2":
-    removed_targets.extend([
+    bad_targets.extend([
         "T0",
         "T1",
         "H0",
@@ -136,7 +146,7 @@ result_files = [result for result in os.listdir(
     results_dir) if result.endswith(".results")]
 to_remove = []
 for result_file in result_files:
-    for removed_target in removed_targets:
+    for removed_target in bad_targets:
         if result_file.startswith(removed_target):
             to_remove.append(result_file)
             break
