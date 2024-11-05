@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import sys
 import os
 
 
@@ -155,17 +156,17 @@ print(data_raw.isna().sum(axis=1)/data_raw.shape[1])
 data_raw = data_raw.T
 
 groups = data_raw.columns
-baseline_group = pd.DataFrame(data_raw["TS304"])
+baseline_group = pd.DataFrame(data_raw["TS145"])
 baseline_dict = {}
 for group in groups:
     data_raw_group = pd.DataFrame(data_raw[group])
     # get the intersection of non nan values in data_raw_group and baseline_group
-    non_nan_baseline = baseline_group[pd.notna(baseline_group["TS304"])].index
+    non_nan_baseline = baseline_group[pd.notna(baseline_group["TS145"])].index
     non_nan_group = data_raw_group[pd.notna(data_raw_group[group])].index
     # 计算两者的交集
     intersection_index = non_nan_baseline.intersection(non_nan_group)
     # 根据 intersection_index 获取对应的值
-    baseline_values = baseline_group.loc[intersection_index, "TS304"]
+    baseline_values = baseline_group.loc[intersection_index, "TS145"]
     group_values = data_raw_group.loc[intersection_index, group]
 
     # sum them up
@@ -185,7 +186,7 @@ baseline_dict = dict(sorted(baseline_dict.items(),
 groups = [key[2:] for key in baseline_dict.keys()]
 values = list(baseline_dict.values())
 plt.figure(figsize=(30, 15))
-highlight_group = "304"
+highlight_group = "145"
 bar_colors = ['C0' if group != highlight_group else 'C1' for group in groups]
 plt.bar(groups, values, color=bar_colors)
 plt.xticks(rotation=45, fontsize=20, ha='right')
@@ -197,7 +198,7 @@ plt.axhline(y=1, color='k')
 # there is one group 145, we need to write something on top of its bar
 for group, value in zip(groups, values):
     if group == highlight_group:
-        plt.text(group, value + 0.02, str("AlphaFold3"),
+        plt.text(group, value + 0.02, str("ColabFold"),
                  ha='center', fontsize=20, color='C1')
 # first 5 groups
 first_5_groups = groups[:5]
@@ -206,5 +207,5 @@ for group, value in zip(first_5_groups, first_5_values):
     plt.text(group, value + 0.01, str(value.round(2)),
              ha='center', fontsize=10, color='C0')
 plt.savefig(
-    sum_path + "sum_intersect_{}-{}-{}_with_af3_baseline.png".format(feature, model, mode), dpi=300)
+    sum_path + "sum_intersect_{}-{}-{}_with_colabfold_baseline.png".format(feature, model, mode), dpi=300)
 ###############

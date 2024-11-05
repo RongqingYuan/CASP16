@@ -22,8 +22,10 @@ csv_path = "./monomer_data_Sep_10/raw_data/EU/"
 csv_path = "./oligomer_data_CASP15/raw_data/"
 sum_path = "./sum_CASP15/"
 
+
 if not os.path.exists(sum_path):
     os.makedirs(sum_path)
+
 
 csv_list = [txt for txt in os.listdir(
     csv_path) if txt.endswith(".csv") and (txt.startswith("T1") or txt.startswith("H1"))]
@@ -184,22 +186,23 @@ plt.figure(figsize=(30, 15))
 highlight_group = "446"
 bar_colors = ['C0' if group != highlight_group else 'C1' for group in groups]
 plt.bar(groups, values, color=bar_colors)
-plt.xticks(rotation=45, fontsize=12, ha='right')
+plt.xticks(rotation=45, fontsize=24, ha='right')
+plt.yticks(fontsize=24)
 plt.title(
-    "sum of {} for {} model in {} targets, compared with baseline (group {}) in CASP15".format(feature, model, mode, highlight_group), fontsize=15)
+    "sum of {} for {} model in {} targets, compared with baseline (group {}) in CASP15".format(feature, model, mode, highlight_group), fontsize=30)
 plt.ylabel("sum of {}".format(feature))
 plt.axhline(y=1, color='k')
 # there is one group 145, we need to write something on top of its bar
 for group, value in zip(groups, values):
     if group == highlight_group:
         plt.text(group, value + 0.02, str("ColabFold"),
-                 ha='center', fontsize=10, color='C1')
+                 ha='center', fontsize=20, color='C1')
 # first 5 groups
 first_5_groups = groups[:5]
 first_5_values = values[:5]
 for group, value in zip(first_5_groups, first_5_values):
     plt.text(group, value + 0.01, str(value.round(2)),
-             ha='center', fontsize=7, color='C0')
+             ha='center', fontsize=16, color='C0')
 plt.savefig(
     sum_path + "sum_intersect_{}-{}-{}_with_colabfold_baseline.png".format(feature, model, mode), dpi=300)
 ###############
