@@ -15,13 +15,17 @@ MODE=all
 STAGE=2
 
 echo "starting step11_process_new_EU_score.py"
-python step11_process_new_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./group_by_target_EU_new_T2/ &
+python step11_process_new_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./group_by_target_EU_new_T2/ --stage $STAGE &
 wait
 
 echo "starting step20_process_new_interface_score.py"
-python step20_process_new_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./group_by_target_per_interface_T2/ &
+python step20_process_new_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./group_by_target_per_interface_T2/  --stage $STAGE &
 wait
 
 echo "starting step21_bootstrap_sum_new_interface.py"
 python step21_bootstrap_sum_new_interface.py --model $MODEL --impute_value $IMPUTE_VALUE --interface_score_path ./group_by_target_per_interface_T2/  --EU_score_path ./group_by_target_EU_new_T2/ --output_path ./bootstrap_new_interface_T2/ &
+wait
+
+echo "starting step23_heatmap.py"
+python step23_heatmap.py --model $MODEL --impute_value $IMPUTE_VALUE --interface_score_path ./group_by_target_per_interface_T2/ --EU_score_path ./group_by_target_EU_new_T2/ --output_path ./heatmap_interface_T2/ &
 wait
