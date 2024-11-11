@@ -3,19 +3,18 @@ import os
 import pandas as pd
 import numpy as np
 
-results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/"
-# result_files = [result for result in os.listdir(
-#     results_dir) if result.endswith(".results")]
-# result_files = [
-#     result_file for result_file in result_files if "v" in result_file]
+os.chdir("/home2/s439906/project/CASP16/oligomer/")
 
+
+results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/"
 v1_file, v2_file = 'T1249v1o.results', 'T1249v2o.results'
 out_dir = "./group_by_target_EU_new/"
 model = "best"
 mode = "all"
+impute_value = -2
 
 
-def group_by_target(results_dir, v1_file, v2_file, out_dir, feature, model, mode):
+def group_by_target(results_dir, v1_file, v2_file, out_dir, feature, model, mode, impute_value=-2):
     print("Processing {}".format(feature))
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -40,11 +39,13 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir, feature, model, mode
                                "1"), :]
     data_v1_grouped = data_v1.groupby(["target", "group"])
     data_v1_grouped = pd.DataFrame(data_v1_grouped[feature].max())
+    print(data_v1_grouped)
     # get target = T1249v1 rows
     target_v1_model_v1 = data_v1_grouped.loc["T1249v1", :]
     # rename column to v1_file
     target_v1_model_v1 = target_v1_model_v1.rename(
         columns={feature: f"{feature}_v1"})
+    print(target_v1_model_v1)
     target_v1_model_v2 = data_v1_grouped.loc["T1249v2", :]
     target_v1_model_v2 = target_v1_model_v2.rename(
         columns={feature: f"{feature}_v1"})
@@ -96,7 +97,8 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir, feature, model, mode
     best_df = best_df.rename(columns={f"{feature}_v1": v1_file.split(".")[
                              0], f"{feature}_v2": v2_file.split(".")[0]})
     best_df.to_csv(out_dir +
-                   "group_by_target-raw-T1249o-{}-{}-{}.csv".format(feature, model, mode))
+                   "group_by_target-raw-T1249o-{}-{}-{}-impute_value={}.csv".format(feature, model, mode, impute_value))
+    print(best_df)
     for target in best_df.columns:
         data = best_df[target]
         data = pd.DataFrame(data)
@@ -107,11 +109,38 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir, feature, model, mode
         new_mean = filtered_data.mean(skipna=True)
         new_std = filtered_data.std(skipna=True)
         new_z_score[target] = (data - new_mean) / new_std
-        new_z_score = new_z_score.fillna(-2.0)
-        new_z_score = new_z_score.where(new_z_score > -2, -2)
+        new_z_score = new_z_score.fillna(impute_value)
+        new_z_score = new_z_score.where(
+            new_z_score > impute_value, impute_value)
         best_df[target] = new_z_score
     best_df.to_csv(out_dir +
-                   "group_by_target-T1249o-{}-{}-{}.csv".format(feature, model, mode))
+                   "group_by_target-T1249o-{}-{}-{}-impute_value={}.csv".format(feature, model, mode, impute_value))
+
+    print(best_df)
+
+    template_raw_file = out_dir + \
+        f"{feature}-{model}-{mode}-impute={impute_value}_raw.csv"
+    template_EU_file = out_dir + \
+        f"{feature}-{model}-{mode}-impute={impute_value}.csv"
+    template_raw = pd.read_csv(template_raw_file, index_col=0)
+    template_EU = pd.read_csv(template_EU_file, index_col=0)
+    print(template_raw)
+    print(template_EU)
+    template_raw = pd.concat([template_raw, best_df], axis=1)
+    template_EU = pd.concat([template_EU, best_df], axis=1)
+    # impute template_EU with impute_value
+    template_EU = template_EU.fillna(impute_value)
+    # sort row and column alphabetically
+    template_EU = template_EU.reindex(sorted(template_EU.columns), axis=1)
+    template_EU = template_EU.sort_index()
+    template_raw = template_raw.reindex(sorted(template_raw.columns), axis=1)
+    template_raw = template_raw.sort_index()
+    # drop TS314 row in the dataframe
+    # this is a special case for T1249o
+    template_raw = template_raw.drop(index='TS314')
+    template_EU = template_EU.drop(index='TS314')
+    template_raw.to_csv(template_raw_file)
+    template_EU.to_csv(template_EU_file)
 
     # breakpoint()
     # filtered_data = best_df[feature][initial_z[feature] >= -2]
@@ -155,77 +184,16 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir, feature, model, mode
 
 
 group_by_target(results_dir, v1_file, v2_file,
-                out_dir, "tm_score", model, mode)
+                out_dir, "tm_score", model, mode, impute_value=impute_value)
 group_by_target(results_dir, v1_file, v2_file,
-                out_dir, "lddt", model, mode)
-sys.exit(0)
-group_by_target(results_dir, result_files, out_dir, "qs_best", model, mode)
-group_by_target(results_dir, result_files, out_dir, "ics", model, mode)
-group_by_target(results_dir, result_files, out_dir, "ips", model, mode)
-group_by_target(results_dir, result_files, out_dir, "dockq_ave", model, mode)
-
-
-def get_group_by_target(csv_path, csv_list, feature, model, mode):
-    data = pd.DataFrame()
-    data_raw = pd.DataFrame()
-    for csv_file in csv_list:
-        data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
-        data_tmp = pd.DataFrame(data_tmp[feature])
-        print("Processing {}".format(csv_file), data_tmp.shape)
-        # breakpoint()
-        data_tmp.index = data_tmp.index.str.extract(
-            r'(\w+)TS(\w+)_(\w+)').apply(lambda x: (f"{x[0]}", f"TS{x[1]}", x[2][0]), axis=1)
-        # breakpoint()
-        data_tmp.index = pd.MultiIndex.from_tuples(
-            data_tmp.index, names=['target', 'group', 'submission_id'])
-        # # get all data with submission_id == 6
-        # data_tmp = data_tmp.loc[(slice(None), slice(None), "6"), :]
-        # drop all data with submission_id == 6
-        if model == "best":
-            data_tmp = data_tmp.loc[(slice(None), slice(None), [
-                "1", "2", "3", "4", "5"]), :]
-        elif model == "first":
-            data_tmp = data_tmp.loc[(slice(None), slice(None),
-                                    "1"), :]
-        # grouped = data_tmp.groupby(["group", "target"])
-        # grouped = pd.DataFrame(grouped[feature].max())
-        # grouped.index = grouped.index.droplevel(1)
-
-        grouped = data_tmp.groupby(["group"])
-        grouped = pd.DataFrame(grouped[feature].max())
-        # grouped.index = grouped.index.droplevel(1)
-        # sort grouped
-        grouped = grouped.sort_values(by=feature, ascending=False)
-        initial_z = (grouped - grouped.mean()) / grouped.std()
-        new_z_score = pd.DataFrame(
-            index=grouped.index, columns=grouped.columns)
-        filtered_data = grouped[feature][initial_z[feature] >= -2]
-        new_mean = filtered_data.mean(skipna=True)
-        new_std = filtered_data.std(skipna=True)
-        new_z_score[feature] = (grouped[feature] - new_mean) / new_std
-        new_z_score = new_z_score.fillna(-2.0)
-        new_z_score = new_z_score.where(new_z_score > -2, -2)
-
-        # breakpoint()
-
-        # I actually don't understand why this is necessary... but need to keep it in mind.
-        # grouped = grouped.apply(lambda x: (x - x.mean()) / x.std())
-
-        new_z_score = new_z_score.rename(
-            columns={feature: csv_file.split(".")[0]})
-        data = pd.concat([data, new_z_score], axis=1)
-        grouped = grouped.rename(
-            columns={feature: csv_file.split(".")[0]})
-        data_raw = pd.concat([data_raw, grouped], axis=1)
-    # impute data again with -2
-    # breakpoint()
-    data = data.fillna(-2.0)
-    data.to_csv("./group_by_target_EU/" +
-                "group_by_target-{}-{}-{}.csv".format(feature, model, mode))
-
-    data_raw.to_csv("./group_by_target_EU/" +
-                    "group_by_target_raw-{}-{}-{}.csv".format(feature, model, mode))
-
-    data["sum"] = data.sum(axis=1)
-    data = data.sort_values(by="sum", ascending=False)
-    data.to_csv("./sum/" + "sum_{}-{}-{}.csv".format(feature, model, mode))
+                out_dir, "lddt", model, mode, impute_value=impute_value)
+group_by_target(results_dir, v1_file, v2_file,
+                out_dir, "qs_global", model, mode, impute_value=impute_value)
+group_by_target(results_dir, v1_file, v2_file,
+                out_dir, "qs_best", model, mode, impute_value=impute_value)
+group_by_target(results_dir, v1_file, v2_file,
+                out_dir, "ics", model, mode, impute_value=impute_value)
+group_by_target(results_dir, v1_file, v2_file,
+                out_dir, "ips", model, mode, impute_value=impute_value)
+group_by_target(results_dir, v1_file, v2_file,
+                out_dir, "dockq_ave", model, mode, impute_value=impute_value)
