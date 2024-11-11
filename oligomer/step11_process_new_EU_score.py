@@ -29,6 +29,9 @@ def group_by_target(results_dir, result_files, out_dir, feature, model, mode, im
         elif model == "first":
             data_tmp = data_tmp.loc[(slice(None), slice(None),
                                     "1"), :]
+        elif model == "sixth":
+            data_tmp = data_tmp.loc[(slice(None), slice(None),
+                                    "6"), :]
         grouped = data_tmp.groupby(["group"])
         grouped = pd.DataFrame(grouped[feature].max())
         grouped = grouped.sort_values(by=feature, ascending=False)
@@ -52,18 +55,17 @@ def group_by_target(results_dir, result_files, out_dir, feature, model, mode, im
     data = data.fillna(impute_value)
     data = data.reindex(sorted(data.columns), axis=1)
     data = data.sort_index()
-
-    data_file = f"group_by_target-{feature}-{model}-{mode}-impute_value={impute_value}.csv"
+    data_file = f"{feature}-{model}-{mode}-impute={impute_value}.csv"
     data.to_csv(out_dir + data_file)
 
     data["sum"] = data.sum(axis=1)
     data = data.sort_values(by="sum", ascending=False)
-    sum_data_file = f"sum_{feature}-{model}-{mode}-impute_value={impute_value}.csv"
+    sum_data_file = f"{feature}-{model}-{mode}-impute={impute_value}_sum.csv"
     data.to_csv(out_dir + sum_data_file)
 
     data_raw = data_raw.reindex(sorted(data_raw.columns), axis=1)
     data_raw = data_raw.sort_index()
-    data_raw_file = f"group_by_target_raw-{feature}-{model}-{mode}-impute_value={impute_value}.csv"
+    data_raw_file = f"{feature}-{model}-{mode}-impute={impute_value}_raw.csv"
     data_raw.to_csv(out_dir + data_raw_file)
 
 
@@ -81,6 +83,7 @@ parser.add_argument("--impute_value", type=int, default=-2)
 parser.add_argument("--stage", type=str, default="1")
 parser.add_argument("--bad_targets", nargs="+", default=[
     "T1246",
+    "T1249",
     "T1269v1o_",
     "T1295o.",
     "H1265_",
@@ -143,7 +146,7 @@ else:
     sys.exit(1)
 
 result_files = [result for result in os.listdir(
-    results_dir) if result.endswith(".results")]
+    results_dir) if result.endswith(".results") and not result.endswith(".nr_interface.results")]
 to_remove = []
 for result_file in result_files:
     for removed_target in bad_targets:
@@ -153,8 +156,8 @@ for result_file in result_files:
 for remove in to_remove:
     result_files.remove(remove)
 result_files = sorted(result_files)
-print(result_files)
-print(len(result_files))
+# print(result_files)
+# print(len(result_files))
 for measure in measures:
     group_by_target(results_dir, result_files, out_dir,
                     measure, model, mode, impute_value)

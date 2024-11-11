@@ -12,26 +12,32 @@ def bootstrap_sum(measures, model, mode,
     EU_measures = ["tm_score", "lddt"]
     interface_measures = ["qs_global_mean", "ics_mean",
                           "ips_mean", "dockq_mean"]
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-    if isinstance(measures, str):
-        if measures == "CASP15":
-            measures = ['LDDT', 'CAD_AA', 'SphGr',
-                        'MP_clash', 'RMS_CA',
-                        'GDT_HA', 'QSE', 'reLLG_const']
-            measure_type = "CASP15"
-        elif measures == "CASP16":
-            measures = ['GDT_HA', 'GDC_SC', 'AL0_P', 'SphGr',
-                        'CAD_AA', 'QSE', 'MolPrb_Score', 'reLLG_const']
-            measure_type = "CASP16"
-        else:
-            print("measures should be a list of strings, or 'CASP15' / 'CASP16'")
-            return 1
-    else:
-        measure_type = "CASP16"
+
+    # if isinstance(measures, str):
+    #     if measures == "CASP15":
+    #         measures = ['LDDT', 'CAD_AA', 'SphGr',
+    #                     'MP_clash', 'RMS_CA',
+    #                     'GDT_HA', 'QSE', 'reLLG_const']
+    #         measure_type = "CASP15"
+    #     elif measures == "CASP16":
+    #         measures = ['GDT_HA', 'GDC_SC', 'AL0_P', 'SphGr',
+    #                     'CAD_AA', 'QSE', 'MolPrb_Score', 'reLLG_const']
+    #         measure_type = "CASP16"
+    #     else:
+    #         print("measures should be a list of strings, or 'CASP15' / 'CASP16'")
+    #         return 1
+    # else:
+    #     measure_type = "CASP16"
     measures = list(measures)
+    if measures == ['qs_global_mean', 'ics_mean', 'ips_mean', 'dockq_mean', 'tm_score', 'lddt']:
+        measure_type = "CASP16"
+    elif measures == ['qs_best', 'ics', 'ips', 'tm_score', 'lddt']:
+        measure_type = "CASP15"
+    else:
+        measure_type = "custom"
     if weight is None:
         weight = [1/len(measures)] * len(measures)
+        print("weight is None, use equal weight")
     equal_weight = len(set(weight)) == 1
     assert len(measures) == len(weight)
 
@@ -56,7 +62,7 @@ def bootstrap_sum(measures, model, mode,
     for i in range(len(measures)):
         measure = measures[i]
         if measure in EU_measures:
-            score_file = f"group_by_target-{measure}-{model}-{mode}-impute_value={impute_value}.csv"
+            score_file = f"{measure}-{model}-{mode}-impute={impute_value}.csv"
             score_matrix = pd.read_csv(EU_score_path + score_file, index_col=0)
             score_matrix = score_matrix.reindex(
                 sorted(score_matrix.columns), axis=1)
@@ -70,7 +76,7 @@ def bootstrap_sum(measures, model, mode,
             measure_score_dict[measure] = dict(score_matrix_sum)
             data = pd.concat([data, score_matrix], axis=0)
         elif measure in interface_measures:
-            score_file = f"sum_weighted_EU_{measure}-{model}-{mode}-impute_value={impute_value}.csv"
+            score_file = f"{measure}-{model}-{mode}-impute={impute_value}_weighted_EU.csv"
             score_matrix = pd.read_csv(
                 interface_score_path + score_file, index_col=0)
             # drop the sum column
@@ -221,7 +227,7 @@ def bootstrap_sum(measures, model, mode,
         png_file = f"individual_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
 
-    breakpoint()
+    # breakpoint()
     # use the above code to get a initial ranking of the groups.
     # then generate new groups list using the ranking
     # then do bootstrapping
@@ -323,8 +329,10 @@ def bootstrap_sum(measures, model, mode,
 
 parser = argparse.ArgumentParser(
     description="options for bootstrapping sum of z-scores")
-parser.add_argument("--measures", type=list, default=["qs_global_mean", "ics_mean", "ips_mean",
-                                                      "dockq_mean", "tm_score", "lddt"])
+parser.add_argument("--measures",  nargs='+',
+                    default=["qs_global_mean", "ics_mean", "ips_mean",
+                             "dockq_mean", "tm_score", "lddt"]
+                    )
 parser.add_argument("--model", type=str, default="best")
 parser.add_argument("--mode", type=str, default="all")
 parser.add_argument("--interface_score_path", type=str,
@@ -333,11 +341,11 @@ parser.add_argument("--EU_score_path", type=str,
                     default="./group_by_target_EU_new/")
 parser.add_argument("--output_path", type=str,
                     default="./bootstrap_new_interface/")
-parser.add_argument("--weight", type=list, default=None)
+parser.add_argument("--weight", nargs='+',
+                    default=[1/6, 1/6, 1/6, 1/6, 1/6, 1/6])
 parser.add_argument("--bootstrap_rounds", type=int, default=1000)
 parser.add_argument("--impute_value", type=int, default=-2)
 parser.add_argument("--top_n", type=int, default=25)
-parser.add_argument("--equal_weight", action="store_true")
 
 args = parser.parse_args()
 measures = args.measures
@@ -350,16 +358,9 @@ weight = args.weight
 bootstrap_rounds = args.bootstrap_rounds
 impute_value = args.impute_value
 top_n = args.top_n
-equal_weight = args.equal_weight
 
-
-if equal_weight:
-    weights = [1/6] * 6
-else:
-    weights = [1/6, 1/6, 1/6,
-               1/6, 1/6,
-               1/6]
-
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
 bootstrap_sum(measures, model, mode,
               interface_score_path, EU_score_path, output_path=output_path,
               weight=None, bootstrap_rounds=bootstrap_rounds, impute_value=impute_value, top_n=top_n)

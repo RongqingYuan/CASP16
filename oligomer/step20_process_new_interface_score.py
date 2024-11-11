@@ -57,7 +57,9 @@ def group_by_target(results_dir, result_files, out_dir,
         elif model == "first":
             data_tmp_split = data_tmp_split.loc[(slice(None), slice(None),
                                                  "1"), :]
-
+        elif model == "sixth":
+            data_tmp_split = data_tmp_split.loc[(slice(None), slice(None),
+                                                "6"), :]
         for i in range(data_tmp_split.shape[1]):
             grouped = data_tmp_split.groupby(["group"])
             feature_name = f"interface_{i+1}"
@@ -125,7 +127,9 @@ def group_by_target(results_dir, result_files, out_dir,
         elif model == "first":
             data_tmp_split = data_tmp_split.loc[(slice(None), slice(None),
                                                  "1"), :]
-
+        elif model == "sixth":
+            data_tmp = data_tmp.loc[(slice(None), slice(None),
+                                    "6"), :]
         nr_refinterf_num = nr_refinterf_num.iloc[0]
         nr_interface_weights = nr_refinterf_num.split(";")
         nr_interface_weights = [float(weight)
@@ -185,24 +189,33 @@ def group_by_target(results_dir, result_files, out_dir,
             ".")[0]] * EU_weight
 
     data = data.fillna(impute_value)
-    data_file = f"group_by_target-{feature}-{model}-{mode}-impute_value={impute_value}.csv"
+    data = data.reindex(sorted(data.columns), axis=1)
+    data = data.sort_index()
+    data_file = f"{feature}-{model}-{mode}-impute={impute_value}.csv"
     data.to_csv(out_dir + data_file)
-    data_raw_file = f"group_by_target_raw-{feature}-{model}-{mode}-impute_value={impute_value}.csv"
-    data_raw.to_csv(out_dir + data_raw_file)
+
     data["sum"] = data.sum(axis=1)
     data = data.sort_values(by="sum", ascending=False)
-    sum_data_file = f"sum_{feature}-{model}-{mode}-impute_value={impute_value}.csv"
+    sum_data_file = f"{feature}-{model}-{mode}-impute={impute_value}_sum.csv"
     data.to_csv(out_dir + sum_data_file)
 
+    data_raw = data_raw.reindex(sorted(data_raw.columns), axis=1)
+    data_raw = data_raw.sort_index()
+    data_raw_file = f"{feature}-{model}-{mode}-impute={impute_value}_raw.csv"
+    data_raw.to_csv(out_dir + data_raw_file)
+
     data_weighted["sum"] = data_weighted.sum(axis=1)
-    data_weighted = data_weighted.sort_values(by="sum", ascending=False)
-    sum_data_weighted_file = f"sum_weighted_EU_{feature}-{model}-{mode}-impute_value={impute_value}.csv"
+    data_weighted = data_weighted.reindex(
+        sorted(data_weighted.columns), axis=1)
+    data_weighted = data_weighted.sort_index()
+    # data_weighted = data_weighted.sort_values(by="sum", ascending=False)
+    sum_data_weighted_file = f"{feature}-{model}-{mode}-impute={impute_value}_weighted_EU.csv"
     data_weighted.to_csv(out_dir + sum_data_weighted_file)
 
 
 parser = argparse.ArgumentParser(
     description="options for interface score processing")
-parser.add_argument("--features", type=list,
+parser.add_argument("--measures", type=list,
                     default=['dockq_mean', 'qs_best_mean', 'qs_global_mean',
                              'ics_mean', 'ips_mean'])
 parser.add_argument("--results_dir", type=str,
@@ -213,54 +226,62 @@ parser.add_argument("--model", type=str, default="best")
 parser.add_argument("--mode", type=str, default="all")
 parser.add_argument("--impute_value", type=int, default=-2)
 parser.add_argument("--stage", type=str, default="1")
+parser.add_argument("--bad_targets", nargs="+", default=[
+    "T1246",
+    "T1249",
+    "T1269v1o_",
+    "T1295o.",
+    "H1265_",
+    "T2270o",
+])
 
 args = parser.parse_args()
-features = args.features
+features = args.measures
 results_dir = args.results_dir
 out_dir = args.out_dir
 model = args.model
 mode = args.mode
 impute_value = args.impute_value
 stage = args.stage
+bad_targets = args.bad_targets
 
 result_files = [result for result in os.listdir(
-    results_dir) if result.endswith(".results")]
-removed_targets = [
-    "T1219",
-    "T1269",
-    "H1265",
-    "T1295",
-    "T1246",
-]
-removed_targets = [
-    # "T1219",
-    "T1246",
-    # "T1269",
-    "T1269v1o_",
-    # "T1295",
-    "T1295o.",
-    # "T1249",
-    # "H1265",
-    "H1265_",
-    "T2270o",
-]
-
+    results_dir) if result.endswith(".nr_interface.results")]
+# removed_targets = [
+#     "T1219",
+#     "T1269",
+#     "H1265",
+#     "T1295",
+#     "T1246",
+# ]
+# removed_targets = [
+#     # "T1219",
+#     "T1246",
+#     # "T1269",
+#     "T1269v1o_",
+#     # "T1295",
+#     "T1295o.",
+#     # "T1249",
+#     # "H1265",
+#     "H1265_",
+#     "T2270o",
+# ]
 if stage == "1":
-    removed_targets.extend([
+    bad_targets.extend([
         "T0",
         "T2",
         "H0",
         "H2"
     ])
 elif stage == "0":
-    removed_targets.extend([
+    bad_targets.extend([
         "T1",
         "T2",
         "H1",
         "H2"
     ])
 elif stage == "2":
-    removed_targets.extend([
+    bad_targets.extend([
         "T0",
         "T1",
         "H0",
@@ -272,7 +293,7 @@ else:
 
 to_remove = []
 for result_file in result_files:
-    for removed_target in removed_targets:
+    for removed_target in bad_targets:
         if result_file.startswith(removed_target):
             to_remove.append(result_file)
             break
