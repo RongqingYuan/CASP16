@@ -114,7 +114,7 @@ print('H1265_v2.nr_interface.results'.startswith('H1265'))
 out_dir = "./group_by_target_per_interface/"
 model = "best"
 mode = "all"
-impute_value = 0
+impute_value = -2
 
 
 # group_by_target(results_dir, result_files, out_dir,

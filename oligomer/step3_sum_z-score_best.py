@@ -153,15 +153,13 @@ features = ["QSglob", "QSbest", "ICS(F1)", "lDDT", "DockQ_Avg",
             "IPS(JaccCoef)", "TMscore"]
 
 
-def get_group_by_target(csv_path, csv_list, feature, model):
+def get_group_by_target(csv_path, csv_list, feature, model, mode):
     data = pd.DataFrame()
     data_raw = pd.DataFrame()
     for csv_file in csv_list:
         data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
         data_tmp = pd.DataFrame(data_tmp[feature])
         print("Processing {}".format(csv_file), data_tmp.shape)
-        if feature in inverse_columns:
-            data_tmp[feature] = -data_tmp[feature]
         # breakpoint()
         data_tmp.index = data_tmp.index.str.extract(
             r'(\w+)TS(\w+)_(\w+)').apply(lambda x: (f"{x[0]}", f"TS{x[1]}", x[2][0]), axis=1)
@@ -222,5 +220,5 @@ def get_group_by_target(csv_path, csv_list, feature, model):
 
 
 for feature in features:
-    get_group_by_target(csv_path, csv_list, feature, model)
+    get_group_by_target(csv_path, csv_list, feature, model, mode)
     print("Finished processing {}".format(feature))
