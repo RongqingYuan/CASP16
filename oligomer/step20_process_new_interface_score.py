@@ -216,8 +216,11 @@ def group_by_target(results_dir, result_files, out_dir,
 parser = argparse.ArgumentParser(
     description="options for interface score processing")
 parser.add_argument("--measures", type=list,
-                    default=['dockq_mean', 'qs_best_mean', 'qs_global_mean',
-                             'ics_mean', 'ips_mean'])
+                    # default=['dockq_mean', 'qs_best_mean', 'qs_global_mean',
+                    #          'ics_mean', 'ips_mean']
+                    default=['dockq_mean_inclNone', 'qs_best_mean_inclNone', 'qs_global_mean_inclNone',
+                             'ics_mean_inclNone', 'ips_mean_inclNone']
+                    )
 parser.add_argument("--results_dir", type=str,
                     default="/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/nr_interfaces/")
 parser.add_argument("--out_dir", type=str,
@@ -229,7 +232,8 @@ parser.add_argument("--stage", type=str, default="1")
 parser.add_argument("--bad_targets", nargs="+", default=[
     "T1246",
     "T1249",
-    "T1269v1o_",
+    "T1269v1o.",
+    # "T1269v1o_",
     "T1295o.",
     "H1265_",
     "T2270o",
@@ -246,7 +250,7 @@ stage = args.stage
 bad_targets = args.bad_targets
 
 result_files = [result for result in os.listdir(
-    results_dir) if result.endswith(".nr_interface.results")]
+    results_dir) if result.endswith(".nr_interface.results_v2")]
 # removed_targets = [
 #     "T1219",
 #     "T1269",
