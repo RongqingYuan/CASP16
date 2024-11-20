@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import pandas as pd
@@ -5,11 +6,12 @@ import numpy as np
 
 
 def group_by_target(results_dir, v1_file, v2_file, out_dir,
-                    feature, model, mode, impute_value):
+                    feature, model, mode, stage, impute_value):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     data = pd.DataFrame()
     data_weighted = pd.DataFrame()
+    data_unweighted = pd.DataFrame()
     data_raw = pd.DataFrame()
     target_v1_model_v1 = None
     target_v1_model_v2 = None
@@ -19,6 +21,8 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir,
         f"{feature}-{model}-{mode}-impute={impute_value}.csv"
     template_EU_file = out_dir + \
         f"{feature}-{model}-{mode}-impute={impute_value}_weighted_EU.csv"
+    template_unweighted_file = out_dir + \
+        f"{feature}-{model}-{mode}-impute={impute_value}_unweighted_EU.csv"
     for file in [v1_file, v2_file]:
         # the nomenclature is bad here, ignore it because it is just a small script.
         v1_path = results_dir + file
@@ -70,12 +74,18 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir,
                 feature_name = f"interface_{i+1}"
                 grouped = pd.DataFrame(grouped[feature_name].max())
                 print(grouped)
-                target_v1_model_v1 = grouped.loc["T1249v1", :]
+                if stage == "1":
+                    target_v1_model_v1 = grouped.loc["T1249v1", :]
+                elif stage == "2":
+                    target_v1_model_v1 = grouped.loc["T2249v1", :]
                 # add _v1 to the column name of target_v1_model_v1
                 target_v1_model_v1 = target_v1_model_v1.rename(
                     columns={feature_name: f"{v1_file.split('.')[0]}_{feature_name}"})
                 print(target_v1_model_v1)
-                target_v1_model_v2 = grouped.loc["T1249v2", :]
+                if stage == "1":
+                    target_v1_model_v2 = grouped.loc["T1249v2", :]
+                elif stage == "2":
+                    target_v1_model_v2 = grouped.loc["T2249v2", :]
                 # add _v2 to the column name of target_v1_model_v2
                 target_v1_model_v2 = target_v1_model_v2.rename(
                     columns={feature_name: f"{v2_file.split('.')[0]}_{feature_name}"})
@@ -85,12 +95,19 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir,
                 grouped = v1_data_split.groupby(["target", "group"])
                 feature_name = f"interface_{i+1}"
                 grouped = pd.DataFrame(grouped[feature_name].max())
-                target_v2_model_v1 = grouped.loc["T1249v1", :]
+                if stage == "1":
+                    target_v2_model_v1 = grouped.loc["T1249v1", :]
+                elif stage == "2":
+                    target_v2_model_v1 = grouped.loc["T2249v1", :]
+
                 # add _v1 to the column name of target_v2_model_v1
                 target_v2_model_v1 = target_v2_model_v1.rename(
                     columns={feature_name: f"{v1_file.split('.')[0]}_{feature_name}"})
                 print(target_v2_model_v1)
-                target_v2_model_v2 = grouped.loc["T1249v2", :]
+                if stage == "1":
+                    target_v2_model_v2 = grouped.loc["T1249v2", :]
+                elif stage == "2":
+                    target_v2_model_v2 = grouped.loc["T2249v2", :]
                 # add _v2 to the column name of target_v2_model_v2
                 target_v2_model_v2 = target_v2_model_v2.rename(
                     columns={feature_name: f"{v2_file.split('.')[0]}_{feature_name}"})
@@ -117,6 +134,8 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir,
     best_df = best_df.sort_index()
     template_raw_df = pd.read_csv(template_raw_file, index_col=0)
     print(best_df)
+    best_df.to_csv(
+        out_dir + f"T1249o-{feature}-{model}-{mode}-impute={impute_value}_raw.csv")
     print(template_raw_df)
     template_raw_df = pd.concat([template_raw_df, best_df], axis=1)
     # # sort the template_raw_df by alphabetical order
@@ -240,19 +259,30 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir,
             target_score = pd.concat([target_score, new_z_score], axis=1)
             target_score = target_score.fillna(impute_value)
         print(target_score)
+
+        # BUG: in the final version of the code, we first do weighted sum and then z-score. here the weight is only 1 so it is the same. I don't want to change the code now.
+
         # take the weighted sum of the interface scores
         target_score = target_score * interface_weight
+        data_unweighted[result_file.split(".")[0]] = target_score.sum(axis=1)
         data_weighted[result_file.split(".")[0]] = target_score.sum(axis=1)
         # then multiply by the EU_weight
         data_weighted[result_file.split(".")[0]] = data_weighted[result_file.split(
             ".")[0]] * EU_weight
     print(data_weighted)
+    data_weighted.to_csv(
+        out_dir + f"T1249o-{feature}-{model}-{mode}-impute={impute_value}_weighted_EU.csv")
     template_EU_df = pd.concat([template_EU_df, data_weighted], axis=1)
-    print(template_EU_df)
+    template_unweighted_df = pd.read_csv(template_unweighted_file, index_col=0)
+    template_unweighted_df = pd.concat(
+        [template_unweighted_df, data_unweighted], axis=1)
+
     # remove rows with any nan values # group 314 only have this target,
     # and it will cause nan values in original data when concat
     template_raw_df = template_raw_df.dropna(axis=0, how='any')
     template_EU_df = template_EU_df.dropna(axis=0, how='any')
+    template_unweighted_df = template_unweighted_df.dropna(axis=0, how='any')
+
     # sort the template_raw_df by alphabetical order
     template_raw_df = template_raw_df.reindex(
         sorted(template_raw_df.columns), axis=1)
@@ -268,6 +298,15 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir,
     template_EU_df.to_csv(template_EU_file)
     template_EU_df.to_csv(
         out_dir + f"{feature}-{model}-{mode}-impute={impute_value}_sum.csv")
+
+    # sort the template_unweighted_df by alphabetical order
+    template_unweighted_df = template_unweighted_df.reindex(
+        sorted(template_unweighted_df.columns), axis=1)
+    template_unweighted_df = template_unweighted_df.sort_index()
+    template_unweighted_df.to_csv(template_unweighted_file)
+    template_unweighted_df.to_csv(
+        out_dir + f"{feature}-{model}-{mode}-impute={impute_value}_unweighted_EU.csv")
+
     # sys.exit(0)
     # data = data.fillna(impute_value)
     # data = data.reindex(sorted(data.columns), axis=1)
@@ -295,18 +334,71 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir,
 
 
 results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/nr_interfaces/"
-v1_file, v2_file = 'T1249v1o.nr_interface.results', 'T1249v2o.nr_interface.results'
-out_dir = "./group_by_target_per_interface/"
+v1_file, v2_file = 'T1249v1o.nr_interface.results_v2', 'T1249v2o.nr_interface.results_v2'
+out_dir = "./score_interface_v2/"
 model = "best"
 mode = "all"
 impute_value = -2
-group_by_target(results_dir, v1_file, v2_file, out_dir,
-                "dockq_mean", model, mode, impute_value)
-group_by_target(results_dir, v1_file, v2_file, out_dir,
-                "qs_best_mean", model, mode, impute_value)
-group_by_target(results_dir, v1_file, v2_file, out_dir,
-                "qs_global_mean", model, mode, impute_value)
-group_by_target(results_dir, v1_file, v2_file, out_dir,
-                "ics_mean", model, mode, impute_value)
-group_by_target(results_dir, v1_file, v2_file, out_dir,
-                "ips_mean", model, mode, impute_value)
+
+
+parser = argparse.ArgumentParser(description="options for sum z-score")
+parser.add_argument("--measures",  nargs='+',
+                    default=["dockq_mean_inclNone", "qs_best_mean_inclNone",
+                             "qs_global_mean_inclNone", "ics_mean_inclNone", "ips_mean_inclNone"])
+parser.add_argument("--results_dir", type=str,
+                    default="/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/nr_interfaces/")
+parser.add_argument("--v1_file", type=str,
+                    default="T1249v1o.nr_interface.results_v2")
+parser.add_argument("--v2_file", type=str,
+                    default="T1249v2o.nr_interface.results_v2")
+parser.add_argument("--out_dir", type=str,
+                    default="./group_by_target_EU_new/")
+parser.add_argument("--model", type=str, default="best")
+parser.add_argument("--mode", type=str, default="all")
+parser.add_argument("--impute_value", type=int, default=-2)
+parser.add_argument("--stage", type=str, default="1")
+
+
+args = parser.parse_args()
+measures = args.measures
+results_dir = args.results_dir
+v1_file = args.v1_file
+v2_file = args.v2_file
+out_dir = args.out_dir
+model = args.model
+mode = args.mode
+impute_value = args.impute_value
+stage = args.stage
+
+if stage == "1":
+    ...
+elif stage == "2":
+    v1_file = "T2249v1o.nr_interface.results_v2"
+    v2_file = "T2249v2o.nr_interface.results_v2"
+
+# group_by_target(results_dir, v1_file, v2_file, out_dir,
+#                 "dockq_mean", model, mode, impute_value)
+# group_by_target(results_dir, v1_file, v2_file, out_dir,
+#                 "qs_best_mean", model, mode, impute_value)
+# group_by_target(results_dir, v1_file, v2_file, out_dir,
+#                 "qs_global_mean", model, mode, impute_value)
+# group_by_target(results_dir, v1_file, v2_file, out_dir,
+#                 "ics_mean", model, mode, impute_value)
+# group_by_target(results_dir, v1_file, v2_file, out_dir,
+#                 "ips_mean", model, mode, impute_value)
+
+
+# group_by_target(results_dir, v1_file, v2_file, out_dir,
+#                 "dockq_mean_inclNone", model, mode, impute_value)
+# group_by_target(results_dir, v1_file, v2_file, out_dir,
+#                 "qs_best_mean_inclNone", model, mode, impute_value)
+# group_by_target(results_dir, v1_file, v2_file, out_dir,
+#                 "qs_global_mean_inclNone", model, mode, impute_value)
+# group_by_target(results_dir, v1_file, v2_file, out_dir,
+#                 "ics_mean_inclNone", model, mode, impute_value)
+# group_by_target(results_dir, v1_file, v2_file, out_dir,
+#                 "ips_mean_inclNone", model, mode, impute_value)
+
+for measure in measures:
+    group_by_target(results_dir, v1_file, v2_file, out_dir,
+                    measure, model, mode, stage, impute_value)

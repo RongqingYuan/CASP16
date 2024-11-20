@@ -1,20 +1,11 @@
+import argparse
 import sys
 import os
 import pandas as pd
 import numpy as np
 
-os.chdir("/home2/s439906/project/CASP16/oligomer/")
 
-
-results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/"
-v1_file, v2_file = 'T1249v1o.results', 'T1249v2o.results'
-out_dir = "./group_by_target_EU_new/"
-model = "best"
-mode = "all"
-impute_value = -2
-
-
-def group_by_target(results_dir, v1_file, v2_file, out_dir, feature, model, mode, impute_value=-2):
+def group_by_target(results_dir, v1_file, v2_file, out_dir, feature, model, mode, stage, impute_value=-2):
     print("Processing {}".format(feature))
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -41,12 +32,19 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir, feature, model, mode
     data_v1_grouped = pd.DataFrame(data_v1_grouped[feature].max())
     print(data_v1_grouped)
     # get target = T1249v1 rows
-    target_v1_model_v1 = data_v1_grouped.loc["T1249v1", :]
+    if stage == "1":
+        target_v1_model_v1 = data_v1_grouped.loc["T1249v1", :]
+    elif stage == "2":
+        target_v1_model_v1 = data_v1_grouped.loc["T2249v1", :]
     # rename column to v1_file
     target_v1_model_v1 = target_v1_model_v1.rename(
         columns={feature: f"{feature}_v1"})
     print(target_v1_model_v1)
-    target_v1_model_v2 = data_v1_grouped.loc["T1249v2", :]
+    if stage == "1":
+        target_v1_model_v2 = data_v1_grouped.loc["T1249v2", :]
+    elif stage == "2":
+        target_v1_model_v2 = data_v1_grouped.loc["T2249v2", :]
+
     target_v1_model_v2 = target_v1_model_v2.rename(
         columns={feature: f"{feature}_v1"})
 
@@ -70,11 +68,17 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir, feature, model, mode
     data_v2_grouped = data_v2.groupby(["target", "group"])
     data_v2_grouped = pd.DataFrame(data_v2_grouped[feature].max())
     # get target = T1249v1 rows
-    target_v2_model_v1 = data_v2_grouped.loc["T1249v1", :]
+    if stage == "1":
+        target_v2_model_v1 = data_v2_grouped.loc["T1249v1", :]
+    elif stage == "2":
+        target_v2_model_v1 = data_v2_grouped.loc["T2249v1", :]
     # rename column to v1_file
     target_v2_model_v1 = target_v2_model_v1.rename(
         columns={feature: f"{feature}_v2"})
-    target_v2_model_v2 = data_v2_grouped.loc["T1249v2", :]
+    if stage == "1":
+        target_v2_model_v2 = data_v2_grouped.loc["T1249v2", :]
+    elif stage == "2":
+        target_v2_model_v2 = data_v2_grouped.loc["T2249v2", :]
     target_v2_model_v2 = target_v2_model_v2.rename(
         columns={feature: f"{feature}_v2"})
 
@@ -183,17 +187,67 @@ def group_by_target(results_dir, v1_file, v2_file, out_dir, feature, model, mode
     # data.to_csv(out_dir + "sum_{}-{}-{}.csv".format(feature, model, mode))
 
 
-group_by_target(results_dir, v1_file, v2_file,
-                out_dir, "tm_score", model, mode, impute_value=impute_value)
-group_by_target(results_dir, v1_file, v2_file,
-                out_dir, "lddt", model, mode, impute_value=impute_value)
-group_by_target(results_dir, v1_file, v2_file,
-                out_dir, "qs_global", model, mode, impute_value=impute_value)
-group_by_target(results_dir, v1_file, v2_file,
-                out_dir, "qs_best", model, mode, impute_value=impute_value)
-group_by_target(results_dir, v1_file, v2_file,
-                out_dir, "ics", model, mode, impute_value=impute_value)
-group_by_target(results_dir, v1_file, v2_file,
-                out_dir, "ips", model, mode, impute_value=impute_value)
-group_by_target(results_dir, v1_file, v2_file,
-                out_dir, "dockq_ave", model, mode, impute_value=impute_value)
+results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/"
+v1_file, v2_file = 'T1249v1o.results', 'T1249v2o.results'
+out_dir = "./score_EU_v2/"
+model = "best"
+mode = "all"
+impute_value = -2
+stage = "1"
+
+parser = argparse.ArgumentParser(description="options for sum z-score")
+parser.add_argument("--measures",  nargs='+',
+                    default=["tm_score", "lddt", "qs_global",
+                             "qs_best", "ics", "ips", "dockq_ave"]
+                    )
+parser.add_argument("--results_dir", type=str,
+                    help="path to the results directory",
+                    default="/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/")
+parser.add_argument("--v1_file", type=str,
+                    help="v1 file name", default="T1249v1o.results")
+parser.add_argument("--v2_file", type=str,
+                    help="v2 file name", default="T1249v2o.results")
+parser.add_argument("--out_dir", type=str,
+                    help="output directory", default="./group_by_target_EU_new/")
+parser.add_argument("--model", type=str,
+                    help="model to use", default="best")
+parser.add_argument("--mode", type=str,
+                    help="mode to use", default="all")
+parser.add_argument("--impute_value", type=int,
+                    help="impute value", default=-2)
+parser.add_argument("--stage", type=str, default="1")
+
+args = parser.parse_args()
+results_dir = args.results_dir
+v1_file = args.v1_file
+v2_file = args.v2_file
+out_dir = args.out_dir
+model = args.model
+mode = args.mode
+impute_value = args.impute_value
+stage = args.stage
+
+if stage == "1":
+    ...
+elif stage == "2":
+    v1_file = "T2249v1o.results"
+    v2_file = "T2249v2o.results"
+
+for measure in args.measures:
+    group_by_target(results_dir, v1_file, v2_file,
+                    out_dir, measure, model, mode, stage, impute_value=impute_value)
+
+# group_by_target(results_dir, v1_file, v2_file,
+#                 out_dir, "tm_score", model, mode, impute_value=impute_value)
+# group_by_target(results_dir, v1_file, v2_file,
+#                 out_dir, "lddt", model, mode, impute_value=impute_value)
+# group_by_target(results_dir, v1_file, v2_file,
+#                 out_dir, "qs_global", model, mode, impute_value=impute_value)
+# group_by_target(results_dir, v1_file, v2_file,
+#                 out_dir, "qs_best", model, mode, impute_value=impute_value)
+# group_by_target(results_dir, v1_file, v2_file,
+#                 out_dir, "ics", model, mode, impute_value=impute_value)
+# group_by_target(results_dir, v1_file, v2_file,
+#                 out_dir, "ips", model, mode, impute_value=impute_value)
+# group_by_target(results_dir, v1_file, v2_file,
+#                 out_dir, "dockq_ave", model, mode, impute_value=impute_value)
