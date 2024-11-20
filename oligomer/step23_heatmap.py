@@ -11,9 +11,12 @@ from matplotlib.gridspec import GridSpec
 def plot_heatmap(measures, model, mode,
                  score_path, interface_score_path, output_path,
                  impute_value=-2, weight=None):
-    EU_measures = ["tm_score", "lddt"]
+    EU_measures = ["tm_score", "lddt", "dockq_ave", "dockq_wave",
+                   "ics", "ips", "qs_best", "qs_global"]
     interface_measures = ["qs_global_mean", "ics_mean",
-                          "ips_mean", "dockq_mean"]
+                          "ips_mean", "dockq_mean", "qs_best_mean", "qs_global_mean_inclNone", "ics_mean_inclNone",
+                          "ips_mean_inclNone", "dockq_mean_inclNone", "qs_best_mean_inclNone"]
+
     measures = list(measures)
     if measures == ['qs_global_mean', 'ics_mean', 'ips_mean', 'dockq_mean', 'tm_score', 'lddt']:
         measure_type = "CASP16"
@@ -50,7 +53,7 @@ def plot_heatmap(measures, model, mode,
             score_matrix = score_matrix * weight_i
             heatmap_data = heatmap_data + score_matrix
         elif measure in interface_measures:
-            score_file = f"{measure}-{model}-{mode}-impute={impute_value}_weighted_EU.csv"
+            score_file = f"{measure}-{model}-{mode}-impute={impute_value}_unweighted_EU.csv"
             score_matrix = pd.read_csv(
                 interface_score_path + score_file, index_col=0)
             weight_i = weight[i]
@@ -154,11 +157,15 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--measures", nargs='+',
                     default=[
                         "tm_score",
-                        "lddt"
-                        "qs_global_mean",
-                        "ics_mean",
-                        "ips_mean",
-                        "dockq_mean"
+                        "lddt",
+                        # "qs_best_mean",
+                        # "ics_mean",
+                        # "ips_mean",
+                        # "dockq_mean"
+                        "qs_best_mean_inclNone",
+                        "ics_mean_inclNone",
+                        "ips_mean_inclNone",
+                        "dockq_mean_inclNone",
                     ]
                     )
 parser.add_argument("--EU_score_path", type=str,
