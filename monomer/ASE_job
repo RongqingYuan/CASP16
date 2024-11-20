@@ -7,7 +7,7 @@
 #SBATCH -J all_job
 
 
-MODEL=best
+MODEL=first
 IMPUTE_VALUE=-2
 MODE=all
 

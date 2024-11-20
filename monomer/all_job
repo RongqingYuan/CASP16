@@ -8,7 +8,7 @@
 #SBATCH -J all_job
 
 
-MODEL=best
+MODEL=first
 IMPUTE_VALUE=-2
 MODE=all
 SCORE_PATH=./monomer_data_Sep_15_EU/
