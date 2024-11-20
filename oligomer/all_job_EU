@@ -1,0 +1,40 @@
+#!/bin/bash
+#SBATCH -p 256GB
+#SBATCH -n 48
+#SBATCH --mem=192g
+#SBATCH -t 28-00:00:00
+#SBATCH -o all_job_EU.log
+#SBATCH -e all_job_EU.err
+#SBATCH -J all_job_EU
+
+
+
+MODEL=best
+IMPUTE_VALUE=-2
+MODE=all
+STAGE=1
+
+echo "starting step11_process_new_EU_score.py"
+python step11_process_new_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_EU_v2/ --stage $STAGE &
+wait
+
+echo "starting step20_process_new_interface_score.py"
+python step20_process_new_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_interface_v2/ --stage $STAGE &
+wait
+
+echo "starting step17_process_T1249o_EU_score.py"
+python step17_process_T1249o_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_EU_v2/ --stage $STAGE &
+wait
+
+echo "starting step18_process_T1249o_interface_score.py"
+python step18_process_T1249o_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_interface_v2/ --stage $STAGE &
+wait
+
+echo "starting step21_bootstrap_sum_new_interface.py"
+python step21_bootstrap_sum_new_interface.py --measures ics ips tm_score lddt --model $MODEL --impute_value $IMPUTE_VALUE --interface_score_path ./score_interface_v2/  --EU_score_path ./score_EU_v2/ --output_path ./out_EU/ &
+wait
+
+echo "starting step23_heatmap.py"
+python step23_heatmap.py --measures ics ips tm_score lddt --model $MODEL --impute_value $IMPUTE_VALUE --interface_score_path ./score_interface_v2/ --EU_score_path ./score_EU_v2/ --output_path ./out_EU/ &
+
+# python step21_bootstrap_sum_new_interface.py --interface_score_path ./group_by_target_per_interface_T0/  --EU_score_path ./group_by_target_EU_new_T0/ --output_path ./bootstrap_new_interface_T0/ &
