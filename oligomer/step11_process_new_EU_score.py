@@ -72,7 +72,7 @@ def group_by_target(results_dir, result_files, out_dir, feature, model, mode, im
 parser = argparse.ArgumentParser(
     description="options for data processing")
 parser.add_argument("--measures", type=list,
-                    default=["qs_global", "qs_best", "ics", "ips", "dockq_ave", "tm_score", "lddt"])
+                    default=["qs_global", "qs_best", "ics", "ips", "dockq_ave",  "dockq_wave", "tm_score", "lddt"])
 parser.add_argument("--results_dir", type=str,
                     default="/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/")
 parser.add_argument("--out_dir", type=str,
@@ -84,7 +84,8 @@ parser.add_argument("--stage", type=str, default="1")
 parser.add_argument("--bad_targets", nargs="+", default=[
     "T1246",
     "T1249",
-    "T1269v1o_",
+    "T1269v1o.",
+    # "T1269v1o_",
     "T1295o.",
     "H1265_",
     "T2270o",
@@ -146,7 +147,7 @@ else:
     sys.exit(1)
 
 result_files = [result for result in os.listdir(
-    results_dir) if result.endswith(".results") and not result.endswith(".nr_interface.results")]
+    results_dir) if result.endswith(".results") and not result.endswith(".nr_interface.results_v2")]
 to_remove = []
 for result_file in result_files:
     for removed_target in bad_targets:
