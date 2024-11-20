@@ -9,32 +9,31 @@ import numpy as np
 def bootstrap_sum(measures, model, mode,
                   score_path, output_path="./bootstrap_EU/",
                   impute_value=-2, weight=None, bootstrap_rounds=1000,  top_n=25):
-    if isinstance(measures, str):
-        if measures == "CASP15":
-            measures = ['LDDT', 'CAD_AA', 'SphGr',
-                        'MP_clash', 'RMS_CA',
-                        'GDT_HA', 'QSE', 'reLLG_const']
-            measure_type = "CASP15"
-        elif measures == "CASP16":
-            measures = ['GDT_HA', 'GDC_SC',
-                        'AL0_P', 'SphGr',
-                        'CAD_AA', 'QSE', 'LDDT',
-                        'MolPrb_Score',
-                        'reLLG_const']
-            measure_type = "CASP16"
-        else:
-            print("measures should be a list of strings, or 'CASP15' / 'CASP16'")
-            return 1
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    measures = list(measures)
+    if measures == ['LDDT', 'CAD_AA', 'SphGr', 'MP_clash', 'RMS_CA', 'GDT_HA', 'QSE', 'reLLG_const']:
+        measure_type = "CASP15"
+    elif measures == ['GDT_HA', 'GDC_SC', 'AL0_P', 'SphGr', 'CAD_AA', 'QSE', 'LDDT', 'MolPrb_Score', 'reLLG_const']:
+        measure_type = "CASP16"
+    elif measures == [
+        'GDT_HA', 'GDC_SC', 'reLLG_const',
+        'QSE',
+        'AL0_P', 'SphGr',
+        'CAD_AA', 'LDDT',
+        'MolPrb_Score',
+    ]:
+        measure_type = "CASP16"
     else:
         measure_type = "custom"
-    measures = list(measures)
     if weight is None:
         weight = [1/len(measures)] * len(measures)
+        print("weight is None, use equal weight")
     equal_weight = len(set(weight)) == 1
     assert len(measures) == len(weight)
     measure = measures[0]
-    score_path = score_path + f"impute={impute_value}/"
-    score_file = f"group_by_target-{measure}-{model}-{mode}.csv"
+    score_file = f"{measure}-{model}-{mode}-impute={impute_value}.csv"
     data_tmp = pd.read_csv(score_path + score_file, index_col=0)
     data_columns = data_tmp.columns
 
@@ -52,7 +51,7 @@ def bootstrap_sum(measures, model, mode,
     measure_score_dict = {}
     for i in range(len(measures)):
         measure = measures[i]
-        score_file = f"group_by_target-{measure}-{model}-{mode}.csv"
+        score_file = f"{measure}-{model}-{mode}-impute={impute_value}.csv"
         score_matrix = pd.read_csv(score_path + score_file, index_col=0)
         score_matrix = score_matrix.reindex(
             sorted(score_matrix.columns), axis=1)
@@ -120,25 +119,72 @@ def bootstrap_sum(measures, model, mode,
     plt.xticks(np.arange(top_n), top_n_group_plt,
                rotation=45, fontsize=20, ha='right')
     plt.yticks(fontsize=20)
+    plt.ylabel("z-score", fontsize=20)
     if min(bottom) > 0:
         plt.ylim(-2, max(bottom)+5)
     plt.legend(fontsize=20)
-    if equal_weight:
+    if equal_weight and len(measures) > 1:
         plt.title(
-            f"z-score for each measure for {measure_type} monomer, {model} models, {mode} EUs", fontsize=20)
+            f"sum z-score using equal weight ({model} models, {mode} EUs)", fontsize=20, pad=20)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_equal_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+    elif len(measures) == 1:
+        plt.title(
+            f"z-score of {measure} ({model} models, {mode} EUs)", fontsize=20, pad=20)
+        png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
     else:
         plt.title(
-            f"z-score for each measure for {measure_type} monomer, {model} models, {mode} EUs", fontsize=20)
+            f"sum z-score using {measure_type} formula ({model} models, {mode} EUs)", fontsize=20, pad=20)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
 
-    top_n_group_1 = groups[:10]
-    top_n_group_plt_1 = groups_plt[:10]
-    index = np.arange(10)
+    plt.figure(figsize=(16, 12))
+    bottom = [0 for i in range(top_n)]
+    min_point = 0
+    for key in measure_score_dict:
+        measure_points = measure_score_dict[key]
+        points = [measure_points[group] for group in top_n_group]
+        min_point = min(min_point, min(points))
+    # offset the to make every group has positive value
+    offset = int(abs(min_point)) + 1
+    if offset >= 3:
+        offset = 2
+    for key in measure_score_dict:
+        measure_points = measure_score_dict[key]
+        points = [measure_points[group] + offset for group in top_n_group]
+        plt.bar(top_n_group_plt, points, bottom=bottom,
+                label=key, width=0.8)
+        bottom = [bottom[i] + points[i] for i in range(top_n)]
+    plt.xticks(np.arange(top_n), top_n_group_plt,
+               rotation=45, fontsize=20, ha='right')
+    plt.yticks(fontsize=20)
+    plt.ylabel("z-score", fontsize=20)
+    # if min(bottom) > 0:
+    #     plt.ylim(-2, max(bottom)+5)
+    plt.ylim(0, max(bottom)+30)
+    plt.legend(fontsize=20)
+    if equal_weight and len(measures) > 1:
+        plt.title(
+            f"sum of each (z-score + {offset}) using equal weight ({model} models, {mode} EUs)", fontsize=20, pad=20)
+        png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_+{offset}_equal_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+    elif len(measures) == 1:
+        plt.title(
+            f"z-score + {offset} of {measure} ({model} models, {mode} EUs)", fontsize=20, pad=20)
+        png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_+{offset}_custom_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+    else:
+        plt.title(
+            f"sum of each (z-score + {offset}) using {measure_type} formula ({model} models, {mode} EUs)", fontsize=20, pad=20)
+        png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_+{offset}_custom_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+
+    top_n_group_1 = groups[:25]
+    top_n_group_plt_1 = groups_plt[:25]
+    index = np.arange(25)
     bar_width = 0.9 / len(measures)
-    plt.figure(figsize=(45, 15))
+    plt.figure(figsize=(100, 15))
     for i in range(len(measures)):
         measure = measures[i]
         print(index + bar_width * i)
@@ -148,15 +194,21 @@ def bootstrap_sum(measures, model, mode,
     plt.xticks(index + bar_width * (len(measures) - 1) /
                2, top_n_group_plt_1, fontsize=40)
     plt.yticks(fontsize=40)
+    plt.ylabel("z-score", fontsize=40)
     plt.legend(fontsize=25)
-    if equal_weight:
+    if equal_weight and len(measures) > 1:
         plt.title(
-            f"sum z-score for {measure_type} monomer, {model} models, {mode} EUs with equal weight", fontsize=40)
+            f"individual z-score using equal weight ({model} models, {mode} EUs)", fontsize=40, pad=20)
         png_file = f"individual_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_equal_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+    elif len(measures) == 1:
+        plt.title(
+            f"z-score of {measure} ({model} models, {mode} EUs)", fontsize=40, pad=20)
+        png_file = f"individual_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
     else:
         plt.title(
-            f"weighted sum z-score for {measure_type} monomer, {model} models, {mode} EUs", fontsize=40)
+            f"individual z-score using {measure_type} formula ({model} models, {mode} EUs)", fontsize=40, pad=20)
         png_file = f"individual_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
 
@@ -258,16 +310,30 @@ def bootstrap_sum(measures, model, mode,
 parser = argparse.ArgumentParser(
     description="options for bootstrapping sum of z-scores")
 parser.add_argument("--score_path", type=str, default="./group_by_target_EU/")
-parser.add_argument("--measures", type=str, default="CASP16")
+
 parser.add_argument("--model", type=str, default="best")
 parser.add_argument("--mode", type=str, default="all")
 parser.add_argument("--output_path", type=str, default="./bootstrap_EU/")
 parser.add_argument("--impute_value", type=int, default=-2)
-parser.add_argument("--weight", type=float, nargs='+', default=None)
+parser.add_argument("--measures", nargs='+',
+                    default=[
+                        'GDT_HA', 'GDC_SC', 'reLLG_const',
+                        'QSE',
+                        'AL0_P', 'SphGr',
+                        'CAD_AA', 'LDDT',
+                        'MolPrb_Score',
+                    ]
+                    )
+parser.add_argument("--weight", type=float, nargs='+',
+                    default=[
+                        1/6, 1/16, 1/6,
+                        1/6,
+                        1/16, 1/8,
+                        1/8, 1/16,
+                        1/16,
+                    ])
 parser.add_argument("--bootstrap_rounds", type=int, default=1000)
 parser.add_argument("--top_n", type=int, default=25)
-parser.add_argument("--equal_weight", action="store_true")
-parser.add_argument("--stage", type=str, default="1")
 args = parser.parse_args()
 score_path = args.score_path
 measures = args.measures
@@ -278,28 +344,8 @@ impute_value = args.impute_value
 weight = args.weight
 bootstrap_rounds = args.bootstrap_rounds
 top_n = args.top_n
-equal_weight = args.equal_weight
-stage = args.stage
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
-if equal_weight:
-    weight = [1/9] * 9
-else:
-    # weight = [1/16, 1/16, 1/16,
-    #           1/12, 1/12,
-    #           1/4, 1/4, 1/4]
 
-    weight = [1/6, 1/16,
-              1/16, 1/8,
-              1/8, 1/6, 1/16,
-              1/16,
-              1/6]
 
-# measures = ['GDT_HA', 'GDC_SC',
-#             'AL0_P', 'SphGr',
-#             'CAD_AA', 'QSE', 'LDDT',
-#             'MolPrb_Score',
-#             'reLLG_const']
 bootstrap_sum(measures=measures, model=model, mode=mode,
               score_path=score_path, output_path=output_path,
               impute_value=impute_value, weight=weight, bootstrap_rounds=bootstrap_rounds, top_n=top_n)
