@@ -9,9 +9,31 @@ import matplotlib.pyplot as plt
 def bootstrap_sum(measures, model, mode,
                   interface_score_path, EU_score_path, output_path="./bootstrap_new_interface/",
                   weight=None, bootstrap_rounds=1000, impute_value=-2, top_n=25):
-    EU_measures = ["tm_score", "lddt"]
+    convert = {
+        "qs_global_mean": "QSglob_mean",
+        "qs_global_mean_inclNone": "QSglob_mean",
+        "qs_global": "QSglob",
+        "qs_best_mean": "QSbest_mean",
+        "qs_best_mean_inclNone": "QSbest_mean",
+        "qs_best": "QSbest",
+        "ics_mean": "ICS_mean",
+        "ics_mean_inclNone": "ICS_mean",
+        "ics": "ICS",
+        "ips_mean": "IPS_mean",
+        "ips_mean_inclNone": "IPS_mean",
+        "ips": "IPS",
+        "dockq_mean": "DockQ_mean",
+        "dockq_mean_inclNone": "DockQ_mean",
+        "dockq_ave": "DockQ_ave",
+        "dockq_wave": "DockQ_wave",
+        "tm_score": "TMscore",
+        "lddt": "lDDT"
+    }
+    EU_measures = ["tm_score", "lddt", "dockq_ave", "dockq_wave",
+                   "ics", "ips", "qs_best", "qs_global"]
     interface_measures = ["qs_global_mean", "ics_mean",
-                          "ips_mean", "dockq_mean"]
+                          "ips_mean", "dockq_mean", "qs_best_mean", "qs_global_mean_inclNone", "ics_mean_inclNone",
+                          "ips_mean_inclNone", "dockq_mean_inclNone", "qs_best_mean_inclNone"]
 
     # if isinstance(measures, str):
     #     if measures == "CASP15":
@@ -31,7 +53,7 @@ def bootstrap_sum(measures, model, mode,
     measures = list(measures)
     if measures == ['qs_global_mean', 'ics_mean', 'ips_mean', 'dockq_mean', 'tm_score', 'lddt']:
         measure_type = "CASP16"
-    elif measures == ['qs_best', 'ics', 'ips', 'tm_score', 'lddt']:
+    elif measures == ['ics', 'ips', 'tm_score', 'lddt']:
         measure_type = "CASP15"
     else:
         measure_type = "custom"
@@ -147,12 +169,7 @@ def bootstrap_sum(measures, model, mode,
     groups_plt = [group[2:] for group in groups]
     plt.figure(figsize=(48, 24))
     bottom = [0 for i in range(length)]
-    convert = {"qs_global_mean": "QSglob_mean",
-               "ics_mean": "ICS_mean",
-               "ips_mean": "IPS_mean",
-               "dockq_mean": "DockQ_mean",
-               "tm_score": "TMscore",
-               "lddt": "lDDT"}
+
     for key in measure_score_dict:
         measure_points = measure_score_dict[key]
         points = [measure_points[group] for group in groups]
@@ -162,18 +179,28 @@ def bootstrap_sum(measures, model, mode,
     plt.xticks(np.arange(length), groups_plt,
                rotation=90, fontsize=24)
     plt.yticks(fontsize=24)
+    plt.ylabel("z-score", fontsize=32)
     plt.legend(fontsize=32)
-    if equal_weight:
+    if equal_weight and measures == ["qs_best_mean_inclNone", "ics_mean_inclNone", "ips_mean_inclNone",
+                                     "dockq_mean_inclNone", "tm_score", "lddt"]:
+        measure_type = "CASP16"
         plt.title(
-            f"z-score sum for {measure_type} oligomer {mode} EUs, {model} models with equal weight", fontsize=32)
+            f"sum z-score using {measure_type} formula ({model} models, {mode} EUs)", fontsize=32, pad=20)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_equal_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
-    else:
+    elif equal_weight and measures == ["ics", "ips", "tm_score", "lddt"]:
+        measure_type = "CASP15"
+
         plt.title(
-            f"z-score sum for {measure_type} oligomer {mode} EUs, {model} models with custom weight", fontsize=32)
+            f"sum z-score using {measure_type} formula ({model} models, {mode} EUs)", fontsize=32, pad=20)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
-
+    else:
+        measure_type = "custom"
+        plt.title(
+            f"sum z-score using {measure_type} formula ({model} models, {mode} EUs)", fontsize=32, pad=20)
+        png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_custom_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
     top_n_group = groups[:top_n]
     top_n_group_plt = groups_plt[:top_n]
     plt.figure(figsize=(16, 12))
@@ -187,17 +214,28 @@ def bootstrap_sum(measures, model, mode,
     plt.xticks(np.arange(top_n), top_n_group_plt,
                rotation=45, fontsize=20, ha='right')
     plt.yticks(fontsize=20)
+    plt.ylabel("z-score", fontsize=20)
     if min(bottom) > 0:
         plt.ylim(-2, max(bottom)+5)
+    # plt.ylim(0, max(bottom)+5)
     plt.legend(fontsize=20)
-    if equal_weight:
+    if equal_weight and measures == ["qs_best_mean_inclNone", "ics_mean_inclNone", "ips_mean_inclNone",
+                                     "dockq_mean_inclNone", "tm_score", "lddt"]:
+        measure_type = "CASP16"
         plt.title(
-            f"z-score sum for {measure_type} oligomer {mode} EUs, {model} models with equal weight", fontsize=20)
+            f"sum z-score using {measure_type} formula ({model} models, {mode} EUs)", fontsize=20, pad=20)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_equal_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
-    else:
+    elif equal_weight and measures == ["ics", "ips", "tm_score", "lddt"]:
+        measure_type = "CASP15"
         plt.title(
-            f"z-score sum for {measure_type} oligomer {mode} EUs, {model} models with custom weight", fontsize=20)
+            f"sum z-score using {measure_type} formula ({model} models, {mode} EUs)", fontsize=20, pad=20)
+        png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+    else:
+        measure_type = "custom"
+        plt.title(
+            f"sum z-score using {measure_type} formula ({model} models, {mode} EUs)", fontsize=20, pad=20)
         png_file = f"sum_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
 
@@ -215,15 +253,25 @@ def bootstrap_sum(measures, model, mode,
     plt.xticks(index + bar_width * (len(measures) - 1) /
                2, top_n_group_plt_1, fontsize=40)
     plt.yticks(fontsize=40)
+    plt.ylabel("z-score", fontsize=40)
     plt.legend(fontsize=25)
-    if equal_weight:
+    if equal_weight and measures == ["qs_best_mean_inclNone", "ics_mean_inclNone", "ips_mean_inclNone",
+                                     "dockq_mean_inclNone", "tm_score", "lddt"]:
+        measure_type = "CASP16"
         plt.title(
-            f"sum z-score for {measure_type} monomer, {model} models, {mode} EUs with equal weight", fontsize=40)
+            f"individual z-score using {measure_type} formula ({model} models, {mode} EUs)", fontsize=40)
         png_file = f"individual_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_equal_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
-    else:
+    elif equal_weight and measures == ["ics", "ips", "tm_score", "lddt"]:
+        measure_type = "CASP15"
         plt.title(
-            f"weighted sum z-score for {measure_type} monomer, {model} models, {mode} EUs", fontsize=40)
+            f"individual z-score using {measure_type} formula ({model} models, {mode} EUs)", fontsize=40)
+        png_file = f"individual_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
+        plt.savefig(output_path + png_file, dpi=300)
+    else:
+        measure_type = "custom"
+        plt.title(
+            f"individual z-score using {measure_type} formula ({model} models, {mode} EUs)", fontsize=40)
         png_file = f"individual_points_{measure_type}_{model}_{mode}_impute_value={impute_value}_top_{top_n}_custom_weight.png"
         plt.savefig(output_path + png_file, dpi=300)
 
@@ -330,8 +378,8 @@ def bootstrap_sum(measures, model, mode,
 parser = argparse.ArgumentParser(
     description="options for bootstrapping sum of z-scores")
 parser.add_argument("--measures",  nargs='+',
-                    default=["qs_global_mean", "ics_mean", "ips_mean",
-                             "dockq_mean", "tm_score", "lddt"]
+                    default=["qs_best_mean_inclNone", "ics_mean_inclNone", "ips_mean_inclNone",
+                             "dockq_mean_inclNone", "tm_score", "lddt"]
                     )
 parser.add_argument("--model", type=str, default="best")
 parser.add_argument("--mode", type=str, default="all")
@@ -343,7 +391,7 @@ parser.add_argument("--output_path", type=str,
                     default="./bootstrap_new_interface/")
 parser.add_argument("--weight", nargs='+',
                     default=[1/6, 1/6, 1/6, 1/6, 1/6, 1/6])
-parser.add_argument("--bootstrap_rounds", type=int, default=1000)
+parser.add_argument("--bootstrap_rounds", type=int, default=2)
 parser.add_argument("--impute_value", type=int, default=-2)
 parser.add_argument("--top_n", type=int, default=25)
 
