@@ -10,6 +10,7 @@ def group_by_target(results_dir, result_files, out_dir,
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     data = pd.DataFrame()
+    data_unweighted = pd.DataFrame()
     data_weighted = pd.DataFrame()
     data_raw = pd.DataFrame()
     print("Processing {}".format(feature))
@@ -160,34 +161,90 @@ def group_by_target(results_dir, result_files, out_dir,
         print(interface_weight)
         EU_weight = data_tmp_split.shape[1] ** (1/3)
 
-        # get a target_score df that has the same row as data_raw to make sure no nan values
-        target_score = pd.DataFrame(index=data_raw.index)
-        for i in range(data_tmp_split.shape[1]):
-            grouped = data_tmp_split.groupby(["group"])
-            feature_name = f"interface_{i+1}"
-            grouped = pd.DataFrame(grouped[feature_name].max())
-            grouped = grouped.sort_values(by=feature_name, ascending=False)
-            initial_z = (grouped - grouped.mean()) / grouped.std()
-            new_z_score = pd.DataFrame(
-                index=grouped.index, columns=grouped.columns)
-            filtered_data = grouped[feature_name][initial_z[feature_name] >= -2]
-            new_mean = filtered_data.mean(skipna=True)
-            new_std = filtered_data.std(skipna=True)
-            new_z_score[feature_name] = (
-                grouped[feature_name] - new_mean) / new_std
-            new_z_score = new_z_score.fillna(impute_value)
-            new_z_score = new_z_score.where(
-                new_z_score > impute_value, impute_value)
-            target_score = pd.concat([target_score, new_z_score], axis=1)
-            target_score = target_score.fillna(impute_value)
+        # # get a target_score df that has the same row as data_raw to make sure no nan values
+        # target_score = pd.DataFrame(index=data_raw.index)
+        # for i in range(data_tmp_split.shape[1]):
+        #     grouped = data_tmp_split.groupby(["group"])
+        #     feature_name = f"interface_{i+1}"
+        #     grouped = pd.DataFrame(grouped[feature_name].max())
+        #     grouped = grouped.sort_values(by=feature_name, ascending=False)
+        #     initial_z = (grouped - grouped.mean()) / grouped.std()
+        #     new_z_score = pd.DataFrame(
+        #         index=grouped.index, columns=grouped.columns)
+        #     filtered_data = grouped[feature_name][initial_z[feature_name] >= -2]
+        #     new_mean = filtered_data.mean(skipna=True)
+        #     new_std = filtered_data.std(skipna=True)
+        #     new_z_score[feature_name] = (
+        #         grouped[feature_name] - new_mean) / new_std
+        #     new_z_score = new_z_score.fillna(impute_value)
+        #     new_z_score = new_z_score.where(
+        #         new_z_score > impute_value, impute_value)
+        #     target_score = pd.concat([target_score, new_z_score], axis=1)
+        #     target_score = target_score.fillna(impute_value)
 
+        # # get a target_score df that has the same row as data_raw to make sure no nan values
+        # target_score = pd.DataFrame(index=data_raw.index)
+        # for i in range(data_tmp_split.shape[1]):
+        #     grouped = data_tmp_split.groupby(["group"])
+        #     feature_name = f"interface_{i+1}"
+        #     grouped = pd.DataFrame(grouped[feature_name].max())
+        #     # grouped = grouped.sort_values(by=feature_name, ascending=False)
+        #     target_score = pd.concat([target_score, grouped], axis=1)
+        #     # target_score = target_score.fillna(impute_value)
+
+        # template_score = pd.DataFrame(index=data_raw.index)
+        data_tmp_split = data_tmp_split.fillna(0)
+        data_tmp_split = data_tmp_split * interface_weight
+        target_score = data_tmp_split.sum(axis=1).to_frame()
+        print(type(target_score))
+        grouped = target_score.groupby(["group"])
+        target_score = pd.DataFrame(grouped.max())
+        target_score.columns = [result_file.split(".")[0]]
+        initial_z = (target_score - target_score.mean()) / \
+            target_score.std()
+        new_z_score = pd.DataFrame(
+            index=target_score.index, columns=target_score.columns)
+        filtered_data = target_score[initial_z >= -2]
+        new_mean = filtered_data.mean(skipna=True)
+        new_std = filtered_data.std(skipna=True)
+        new_z_score = (target_score - new_mean) / new_std
+        new_z_score = new_z_score.fillna(impute_value)
+        new_z_score = new_z_score.where(
+            new_z_score > impute_value, impute_value)
+        new_z_score = new_z_score.reindex(
+            data_raw.index, fill_value=impute_value)
+        new_z_score = new_z_score.where(
+            new_z_score > impute_value, impute_value)
+        data_unweighted[result_file.split(
+            ".")[0]] = new_z_score[result_file.split(".")[0]]
+        new_z_score = new_z_score * EU_weight
+        print(new_z_score.shape)
+        data_weighted[result_file.split(
+            ".")[0]] = new_z_score[result_file.split(".")[0]]
         # take the weighted sum of the interface scores
-        target_score = target_score * interface_weight
-        data_weighted[result_file.split(".")[0]] = target_score.sum(axis=1)
-        # then multiply by the EU_weight
-        data_weighted[result_file.split(".")[0]] = data_weighted[result_file.split(
-            ".")[0]] * EU_weight
+        # target_score = target_score * interface_weight
+        # data_weighted[result_file.split(".")[0]] = target_score.sum(axis=1)
+        # # fill with 0 here if there are any
+        # data_weighted = data_weighted.fillna(0)
 
+        # # breakpoint()
+        # initial_z = (data_weighted - data_weighted.mean()) / \
+        #     data_weighted.std()
+        # new_z_score = pd.DataFrame(
+        #     index=data_weighted.index, columns=data_weighted.columns)
+        # filtered_data = data_weighted[initial_z >= -2]
+        # new_mean = filtered_data.mean(skipna=True)
+        # new_std = filtered_data.std(skipna=True)
+        # new_z_score = (data_weighted - new_mean) / new_std
+        # new_z_score = new_z_score.fillna(impute_value)
+        # new_z_score = new_z_score.where(
+        #     new_z_score > impute_value, impute_value)
+        # data_weighted = new_z_score
+        # data_weighted.reindex(data_raw.index, fill_value=impute_value)
+        # # then multiply by the EU_weight
+        # data_weighted[result_file.split(".")[0]] = data_weighted[result_file.split(
+        #     ".")[0]] * EU_weight
+        # breakpoint()
     data = data.fillna(impute_value)
     data = data.reindex(sorted(data.columns), axis=1)
     data = data.sort_index()
@@ -211,6 +268,14 @@ def group_by_target(results_dir, result_files, out_dir,
     # data_weighted = data_weighted.sort_values(by="sum", ascending=False)
     sum_data_weighted_file = f"{feature}-{model}-{mode}-impute={impute_value}_weighted_EU.csv"
     data_weighted.to_csv(out_dir + sum_data_weighted_file)
+
+    data_unweighted["sum"] = data_unweighted.sum(axis=1)
+    data_unweighted = data_unweighted.reindex(
+        sorted(data_unweighted.columns), axis=1)
+    data_unweighted = data_unweighted.sort_index()
+    # data_unweighted = data_unweighted.sort_values(by="sum", ascending=False)
+    sum_data_unweighted_file = f"{feature}-{model}-{mode}-impute={impute_value}_unweighted_EU.csv"
+    data_unweighted.to_csv(out_dir + sum_data_unweighted_file)
 
 
 parser = argparse.ArgumentParser(
