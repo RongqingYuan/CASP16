@@ -22,10 +22,10 @@ model = "best"
 
 path = "./sum/"
 path = "./sum_EU/"
-
+impute_value = -2
 data_all = pd.DataFrame()
 for feature in features:
-    file = "./sum_EU/" + \
+    file = "./sum_EU/" + "impute={}/".format(impute_value) + \
         "sum_unweighted_{}-{}-{}.csv".format(feature, model, mode)
     data = pd.read_csv(file, index_col=0)
 
@@ -42,6 +42,7 @@ for feature in features:
     # breakpoint()
     data_all = pd.concat([data_all, data], axis=1)
 
+breakpoint()
 
 data_all.to_csv(
     "./by_EU/" + "sum_all-{}-{}_expanded.csv".format(model, mode))
@@ -60,12 +61,17 @@ data_all_exist_new = data_all_exist[cols]
 # get the correlation matrix of the data
 correlation_matrix = data_all_exist_new.corr()
 # plot the correlation matrix
-plt.figure(figsize=(18, 12), dpi=300)
+plt.figure(figsize=(18, 16), dpi=300)
 cmap = sns.diverging_palette(240, 10, as_cmap=True)  # 240°是蓝色，10°是红色
 ax = sns.heatmap(correlation_matrix, annot=True,
                  cmap=cmap, cbar=True, center=0, square=True)
-ax.yaxis.set_tick_params(labelsize=9)  # 设置y轴字体大小
-plt.title("Correlation Matrix")
+ax.yaxis.set_tick_params(labelsize=20)  # 设置y轴字体大小
+ax.xaxis.set_tick_params(labelsize=20)  # 设置x轴字体大小
+plt.title("Correlation Matrix", fontsize=22)
+# set the font of scale bar
+cbar = ax.collections[0].colorbar
+cbar.ax.tick_params(labelsize=20)
+
 plt.savefig("./by_EU/" + "correlation_matrix.png", dpi=300)
 
 
@@ -75,10 +81,10 @@ plt.savefig("./by_EU/" + "correlation_matrix.png", dpi=300)
 # W = model.fit_transform(data_all_exist_new)
 # H = model.components_
 
-breakpoint()
+# breakpoint()
 
 
-N = 4
+N = 5
 # Load_Matrix_rotated = FactorAnalyzer(
 #     rotation='varimax', n_factors=N, method='principal')
 # Load_Matrix_rotated = FactorAnalyzer(
@@ -115,16 +121,19 @@ plt.savefig("./by_EU/" + "FA_abs.png", dpi=300)
 
 
 df = pd.DataFrame(Load_Matrix, index=data_all.columns)
-plt.figure(figsize=(8, 6), dpi=300)
+plt.figure(figsize=(12, 9), dpi=300)
 cmap = sns.diverging_palette(240, 10, as_cmap=True)  # 240°是蓝色，10°是红色
-ax = sns.heatmap(df, annot=True, cmap=cmap, center=0, cbar=True)
+ax = sns.heatmap(df, annot=True, cmap=cmap, center=0,
+                 cbar=True, annot_kws={"fontsize": 15})
 # ax = sns.heatmap(df, annot=True, cmap="BuPu", cbar=True)
-ax.yaxis.set_tick_params(labelsize=10)  # 设置y轴字体大小
-plt.title("Loading Matrix", fontsize=12)
-plt.xlabel("factors", fontsize=12)  # 设置x轴标签
+ax.yaxis.set_tick_params(labelsize=15)  # 设置y轴字体大小
+plt.title("Loading Matrix", fontsize=15)
+plt.xlabel("factors", fontsize=15)  # 设置x轴标签
 # plt.xlabel("factors", fontsize="xx-large")  # 设置x轴标签
 # set the x-axis to be factor1, factor2, ...
-ax.set_xticklabels(["factor" + str(i + 1) for i in range(N)], fontsize=10)
+ax.set_xticklabels(["Factor " + str(i + 1) for i in range(N)], fontsize=15)
+cbar = ax.collections[0].colorbar
+cbar.ax.tick_params(labelsize=15)
 plt.savefig("./by_EU/" + "FA_{}.png".format(N), dpi=300)
 
 
@@ -132,7 +141,7 @@ M = Load_Matrix_rotated.loadings_
 N_ = np.dot(M.T, M)
 N_inv = np.linalg.inv(N_)
 F_mat = np.dot(N_inv, M.T)
-breakpoint()
+# breakpoint()
 F_mat_T = F_mat.T
 F_mat_T = pd.DataFrame(F_mat_T, index=data_all.columns)
 
@@ -164,7 +173,7 @@ score_df.to_csv(
 score_df = score_df.sort_values(by="low_resolution_score", ascending=False)
 score_df.to_csv(
     "./by_EU/" + "factor_score_all-{}-{}_expanded_sorted.csv".format(model, mode))
-breakpoint()
+# breakpoint()
 # score_df.index = score_df.index.str.extract(
 #     r'(T\w+)TS(\w+)_(\w+)-(D\w+)').apply(lambda x: (f"{x[0]}-{x[3]}", f"TS{x[1]}", x[2]), axis=1)
 
@@ -173,24 +182,24 @@ breakpoint()
 plt.figure(figsize=(10, 15))
 plt.scatter(score_df["low_resolution_score"],
             score_df["chemical_score"])
-plt.xlabel("low_resolution_score")
-plt.ylabel("chemical_score")
-plt.title("low_resolution_score vs chemical_score")
-for i in range(score_df.shape[0]):
-    plt.text(score_df["low_resolution_score"].iloc[i],
-             score_df["chemical_score"].iloc[i], score_df.index[i])
+plt.xlabel("low_resolution_score", fontsize=15)
+plt.ylabel("chemical_score", fontsize=15)
+plt.title("low_resolution_score vs chemical_score", fontsize=15)
+# for i in range(score_df.shape[0]):
+#     plt.text(score_df["low_resolution_score"].iloc[i],
+#              score_df["chemical_score"].iloc[i], score_df.index[i])
 plt.savefig("./by_EU/" + "low_resolution_score_vs_chemical_score.png", dpi=300)
 
 # plot first column vs third column
 plt.figure(figsize=(10, 15))
 plt.scatter(score_df["low_resolution_score"],
             score_df["high_resolution_score"])
-plt.xlabel("low_resolution_score")
-plt.ylabel("high_resolution_score")
-plt.title("low_resolution_score vs high_resolution_score")
-for i in range(score_df.shape[0]):
-    plt.text(score_df["low_resolution_score"].iloc[i],
-             score_df["high_resolution_score"].iloc[i], score_df.index[i])
+plt.xlabel("low_resolution_score", fontsize=15)
+plt.ylabel("high_resolution_score", fontsize=15)
+plt.title("low_resolution_score vs high_resolution_score", fontsize=15)
+# for i in range(score_df.shape[0]):
+#     plt.text(score_df["low_resolution_score"].iloc[i],
+#              score_df["high_resolution_score"].iloc[i], score_df.index[i])
 plt.savefig(
     "./by_EU/" + "low_resolution_score_vs_high_resolution_score.png", dpi=300)
 
@@ -198,9 +207,9 @@ plt.savefig(
 plt.figure(figsize=(10, 15))
 plt.scatter(score_df["chemical_score"],
             score_df["high_resolution_score"])
-plt.xlabel("chemical_score")
-plt.ylabel("high_resolution_score")
-plt.title("chemical_score vs high_resolution_score")
+plt.xlabel("chemical_score", fontsize=15)
+plt.ylabel("high_resolution_score", fontsize=15)
+plt.title("chemical_score vs high_resolution_score", fontsize=15)
 for i in range(score_df.shape[0]):
     plt.text(score_df["chemical_score"].iloc[i],
              score_df["high_resolution_score"].iloc[i], score_df.index[i])
