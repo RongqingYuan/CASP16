@@ -27,7 +27,7 @@ def plot_heatmap(measures, model, mode,
 
     # to get the mask
     measure = measures[0]
-    raw_file = f"{measure}-{model}-{mode}-raw.csv"
+    raw_file = f"{measure}-{model}-{mode}-raw-mask.csv"
     raw_data = pd.read_csv(score_path + raw_file, index_col=0)
     mask = raw_data.isna()
     # get the same shape of data

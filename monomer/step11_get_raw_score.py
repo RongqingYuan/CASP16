@@ -8,10 +8,12 @@ def get_group_by_target(csv_list, csv_path, out_path,
     inverse_columns = ["RMS_CA", "RMS_ALL", "err",
                        "RMSD[L]", "MolPrb_Score", "FlexE", "MP_clash", "MP_rotout", "MP_ramout"]
 
-    if not os.path.exists(out_path + f"impute={impute_value}/"):
-        os.makedirs(out_path + f"impute={impute_value}/")
-    if not os.path.exists(out_path + "raw/"):
-        os.makedirs(out_path + "raw/")
+    # if not os.path.exists(out_path + f"impute={impute_value}/"):
+    #     os.makedirs(out_path + f"impute={impute_value}/")
+    # if not os.path.exists(out_path + "raw/"):
+    #     os.makedirs(out_path + "raw/")
+    # if not os.path.exists(sum_path + f"impute={impute_value}/"):
+    #     os.makedirs(sum_path + f"impute={impute_value}/")
 
     data = pd.DataFrame()
     data_raw = pd.DataFrame()
@@ -22,18 +24,13 @@ def get_group_by_target(csv_list, csv_path, out_path,
         # if there is "-" in the value, replace it with 0
         data_tmp = data_tmp.replace("-", float(0))
 
-        # sort data_tmp index alphabetically
-        data_tmp = data_tmp.sort_index()
+        if feature in inverse_columns:
+            data_tmp[feature] = -data_tmp[feature]
+
         data_tmp.index = data_tmp.index.str.extract(
             r'(T\w+)TS(\w+)_(\w+)-(D\w+)').apply(lambda x: (f"{x[0]}-{x[3]}", f"TS{x[1]}", x[2]), axis=1)
         data_tmp.index = pd.MultiIndex.from_tuples(
-            data_tmp.index, names=['target', 'group', 'model'])
-        # check if there is duplicated index
-        if data_tmp.index.duplicated().any():
-            print(f"Duplicated index in {csv_file}")
-            # if there is duplicated index, take the max value of that duplicated index's value
-            data_tmp = data_tmp.groupby(level=data_tmp.index.names).max()
-            print(data_tmp)
+            data_tmp.index, names=['target', 'group', 'submission_id'])
         if model == "best":
             data_tmp = data_tmp.loc[(slice(None), slice(None), [
                 "1", "2", "3", "4", "5"]), :]
@@ -43,28 +40,20 @@ def get_group_by_target(csv_list, csv_path, out_path,
         elif model == "sixth":
             data_tmp = data_tmp.loc[(slice(None), slice(None),
                                     "6"), :]
-
         grouped = data_tmp.groupby(["group"])
         grouped = pd.DataFrame(grouped[feature].max())
-        new_z_score = grouped[[feature]].astype(float)
-
-        # if feature in inverse_columns:
-        #     data_tmp[feature] = -data_tmp[feature]
-        # grouped = data_tmp.groupby(["group"])
-        # grouped = pd.DataFrame(grouped[feature].max())
-        # # grouped.index = grouped.index.droplevel(1)
-        # grouped[feature] = grouped[feature].astype(float)
-        # grouped = grouped.sort_values(by=feature, ascending=False)
-        # initial_z = (grouped - grouped.mean()) / grouped.std()
-        # new_z_score = pd.DataFrame(
-        #     index=grouped.index, columns=grouped.columns)
-        # filtered_data = grouped[feature][initial_z[feature] >= -2]
-        # new_mean = filtered_data.mean(skipna=True)
-        # new_std = filtered_data.std(skipna=True)
-        # new_z_score[feature] = (grouped[feature] - new_mean) / new_std
-        # new_z_score = new_z_score.fillna(impute_value)
-        # new_z_score = new_z_score.where(
-        #     new_z_score > impute_value, impute_value)
+        grouped[feature] = grouped[feature].astype(float)
+        grouped = grouped.sort_values(by=feature, ascending=False)
+        initial_z = (grouped - grouped.mean()) / grouped.std()
+        new_z_score = pd.DataFrame(
+            index=grouped.index, columns=grouped.columns)
+        filtered_data = grouped[feature][initial_z[feature] >= -2]
+        new_mean = filtered_data.mean(skipna=True)
+        new_std = filtered_data.std(skipna=True)
+        new_z_score[feature] = (grouped[feature] - new_mean) / new_std
+        new_z_score = new_z_score.fillna(impute_value)
+        new_z_score = new_z_score.where(
+            new_z_score > impute_value, impute_value)
         new_z_score = new_z_score.rename(
             columns={feature: csv_file.split(".")[0]})
         data = pd.concat([data, new_z_score], axis=1)
@@ -72,51 +61,51 @@ def get_group_by_target(csv_list, csv_path, out_path,
         grouped = grouped.rename(columns={feature: csv_file.split(".")[0]})
         data_raw = pd.concat([data_raw, grouped], axis=1)
 
-    # impute data again with impute_value, because some group may not submit all targets
-    data = data.fillna(impute_value)
-    # nan_values = data.isnull().sum().sum()
-    # print(f"Number of nan values: {nan_values}")
+    # # impute data again with impute_value, because some group may not submit all targets
+    # data = data.fillna(impute_value)
+    # # nan_values = data.isnull().sum().sum()
+    # # print(f"Number of nan values: {nan_values}")
 
-    data = data.reindex(sorted(data.columns), axis=1)
-    data = data.sort_index()
-    data_csv = f"{feature}-{model}-{mode}-impute={impute_value}.csv"
-    data.to_csv(out_path + data_csv)
+    # data = data.reindex(sorted(data.columns), axis=1)
+    # data = data.sort_index()
+    # data_csv = f"{feature}-{model}-{mode}-impute={impute_value}.csv"
+    # data.to_csv(out_path + data_csv)
 
-    data_columns = data.columns
-    target_count = {}
-    for EU in data_columns:
-        target = EU.split("-")[0]
-        if target not in target_count:
-            target_count[target] = 0
-        target_count[target] += 1
-    # use the inverse of the target_count as the weight
-    target_weight = {key: 1/value for key, value in target_count.items()}
-    # assign EU_weight based on the target_weight
-    EU_weight = {EU: target_weight[EU.split("-")[0]]
-                 for EU in data_columns}
+    # data_columns = data.columns
+    # target_count = {}
+    # for EU in data_columns:
+    #     target = EU.split("-")[0]
+    #     if target not in target_count:
+    #         target_count[target] = 0
+    #     target_count[target] += 1
+    # # use the inverse of the target_count as the weight
+    # target_weight = {key: 1/value for key, value in target_count.items()}
+    # # assign EU_weight based on the target_weight
+    # EU_weight = {EU: target_weight[EU.split("-")[0]]
+    #              for EU in data_columns}
 
-    data["sum"] = data.sum(axis=1)
-    data = data.sort_values(by="sum", ascending=False)
-    data_sum_unweighted_csv = f"{feature}-{model}-{mode}-impute={impute_value}-sum_unweighted.csv"
-    data.to_csv(out_path + data_sum_unweighted_csv)
+    # data["sum"] = data.sum(axis=1)
+    # data = data.sort_values(by="sum", ascending=False)
+    # data_sum_unweighted_csv = f"{feature}-{model}-{mode}-impute={impute_value}-sum_unweighted.csv"
+    # data.to_csv(out_path + data_sum_unweighted_csv)
 
-    data.drop(columns=["sum"], inplace=True)
-    data = data * pd.Series(EU_weight)
-    data["sum"] = data.sum(axis=1)
-    data = data.sort_values(by="sum", ascending=False)
-    data_sum_csv = f"{feature}-{model}-{mode}-impute={impute_value}-sum.csv"
-    data.to_csv(out_path + data_sum_csv)
+    # data.drop(columns=["sum"], inplace=True)
+    # data = data * pd.Series(EU_weight)
+    # data["sum"] = data.sum(axis=1)
+    # data = data.sort_values(by="sum", ascending=False)
+    # data_sum_csv = f"{feature}-{model}-{mode}-impute={impute_value}-sum.csv"
+    # data.to_csv(out_path + data_sum_csv)
 
     data_raw = data_raw.reindex(sorted(data_raw.columns), axis=1)
     data_raw = data_raw.sort_index()
-    data_raw_csv = f"{feature}-{model}-{mode}-raw-mask.csv"
+    data_raw_csv = f"{feature}-{model}-{mode}-raw.csv"
     data_raw.to_csv(out_path + data_raw_csv)
 
 
 parser = argparse.ArgumentParser(description="options for sum z-score")
 
 parser.add_argument('--csv_path', type=str,
-                    default="./monomer_data_newest/processed/")
+                    default="./monomer_data_newest/raw_data/")
 parser.add_argument('--out_path', type=str, default="./group_by_target_EU/")
 parser.add_argument('--model', type=str,
                     help='first, best or sixth', default='best')
@@ -250,14 +239,6 @@ features = ['GDT_TS',
             # 'MP_ramfv',
             'reLLG_lddt',
             'reLLG_const']
-
-features = [
-    'GDT_HA', 'GDC_SC', 'AL0_P',
-    'MolPrb_Score', 'LDDT',
-    'SphGr',
-    'CAD_AA', 'QSE',
-    'reLLG_const',
-]
 for feature in features:
     get_group_by_target(csv_list, csv_path, out_path,
                         feature, model, mode, impute_value=impute_value)

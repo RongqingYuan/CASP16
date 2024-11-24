@@ -332,7 +332,7 @@ parser.add_argument("--weight", type=float, nargs='+',
                         1/8, 1/16,
                         1/16,
                     ])
-parser.add_argument("--bootstrap_rounds", type=int, default=1000)
+parser.add_argument("--bootstrap_rounds", type=int, default=1)
 parser.add_argument("--top_n", type=int, default=25)
 args = parser.parse_args()
 score_path = args.score_path
