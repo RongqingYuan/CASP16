@@ -6,7 +6,7 @@ import time
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--stage', type=str, default="1")
+parser.add_argument('--stage', type=str, default="all")
 parser.add_argument('--input_path', type=str,
                     # default="/home2/s439906/data/CASP16/monomers_EU_merge_v/"
                     # default="/home2/s439906/data/CASP16/monomer_inputs/"
@@ -60,6 +60,7 @@ if not os.path.exists(monomer_data_EU_path):
     os.makedirs(monomer_data_EU_path)
 if not os.path.exists(monomer_data_raw_EU_path):
     os.makedirs(monomer_data_raw_EU_path)
+monomer_list.sort()
 
 
 time_1 = time.time()
@@ -145,20 +146,54 @@ for monomer in monomer_list:
         'MolPrb_Score',
     ]
     data = data[to_save]
-    data = data.replace("N/A", np.nan)
-    data = data.replace("-", np.nan)
+    # breakpoint()
+    data = data[~data.index.str.contains('_6')]
+    # data = data.replace("N/A", np.nan)
+    # data = data.replace("-", np.nan)
+    max_MP = data['MolPrb_Score'].replace(
+        ['N/A', '-'], pd.NA).dropna().astype(float).max()
+    # max_value = 10
+    data['MolPrb_Score'] = data['MolPrb_Score'].replace(
+        ['N/A', '-'], max_MP)
+    min_QSE = data['QSE'].replace(
+        ['N/A', '-'], pd.NA).dropna().astype(float).min()
+    data['QSE'] = data['QSE'].replace(
+        ['N/A', '-'], min_QSE)
+    # min_reLLG = data['reLLG_const'].replace(
+    #     ['N/A', '-'], pd.NA).dropna().astype(float).min()
+    # data['reLLG_const'] = data['reLLG_const'].replace(
+    #     ['N/A', '-'], min_reLLG)
+    # min_AL0_P = data['AL0_P'].replace(
+    #     ['N/A', '-'], pd.NA).dropna().astype(float).min()
+    # data['AL0_P'] = data['AL0_P'].replace(
+    #     ['N/A', '-'], min_AL0_P)
+    min_SphGr = data['SphGr'].replace(
+        ['N/A', '-'], pd.NA).dropna().astype(float).min()
+    data['SphGr'] = data['SphGr'].replace(
+        ['N/A', '-'], min_SphGr)
+    min_CAD_AA = data['CAD_AA'].replace(
+        ['N/A', '-'], pd.NA).dropna().astype(float).min()
+    data['CAD_AA'] = data['CAD_AA'].replace(
+        ['N/A', '-'], min_CAD_AA)
+    min_LDDT = data['LDDT'].replace(
+        ['N/A', '-'], pd.NA).dropna().astype(float).min()
+    data['LDDT'] = data['LDDT'].replace(
+        ['N/A', '-'], min_LDDT)
+    # data = data.replace("N/A", 0)
+    # data = data.replace("-", 0)
     data = data.astype(float)
     inverse_columns = ["MolPrb_Score"]
     data[inverse_columns] = -data[inverse_columns]
-    initial_z = (data - data.mean()) / data.std()
+    initial_z = (data - data.mean()) / data.std(ddof=0)
     new_z_score = pd.DataFrame(index=data.index, columns=data.columns)
     for column in data.columns:
         filtered_data = data[column][initial_z[column] >= -2]
         new_mean = filtered_data.mean(skipna=True)
-        new_std = filtered_data.std(skipna=True)
+        new_std = filtered_data.std(skipna=True, ddof=0)
         new_z_score[column] = (data[column] - new_mean) / new_std
     new_z_score = new_z_score.fillna(-2.0)
     new_z_score = new_z_score.where(new_z_score > -2, -2)
+    new_z_score.to_csv(monomer_data_EU_path + monomer[:-4] + ".tmp")
     new_z_score = new_z_score.sort_index()
     new_z_score.to_csv(monomer_data_EU_path + monomer[:-4] + ".csv")
 
