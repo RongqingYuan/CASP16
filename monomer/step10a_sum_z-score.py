@@ -18,26 +18,34 @@ def get_group_by_target(csv_list, csv_path, out_path,
             data_weighted_sum = data_weighted_sum.rename(
                 columns={0: target})
             data_tmp['weighted_sum'] = data_weighted_sum
-        # breakpoint()
-        data_weighted_sum.index = data_weighted_sum.index.str.extract(
+        data_tmp.index = data_tmp.index.str.extract(
             r'(T\w+)TS(\w+)_(\w+)-(D\w+)').apply(lambda x: (f"{x[0]}-{x[3]}", f"TS{x[1]}", x[2]), axis=1)
-        data_weighted_sum.index = pd.MultiIndex.from_tuples(
-            data_weighted_sum.index, names=['target', 'group', 'model'])
-        if data_weighted_sum.index.duplicated().any():
-            print(f"Duplicated index in {csv_file}")
-            data_weighted_sum = data_weighted_sum.groupby(
-                level=data_weighted_sum.index.names).max()
+        data_tmp.index = pd.MultiIndex.from_tuples(
+            data_tmp.index, names=['target', 'group', 'model'])
+
+        # no more duplicated index to worry about
+        # if data_tmp.index.duplicated().any():
+        #     print(f"Duplicated index in {csv_file}")
+        #     data_tmp = data_tmp.groupby(
+        #         level=data_tmp.index.names).max()
+
         if model == "best":
-            data_weighted_sum = data_weighted_sum.loc[(slice(None), slice(None), [
+            data_tmp = data_tmp.loc[(slice(None), slice(None), [
                 "1", "2", "3", "4", "5"]), :]
         elif model == "first":
-            data_weighted_sum = data_weighted_sum.loc[(slice(None), slice(None),
-                                                       "1"), :]
+            data_tmp = data_tmp.loc[(slice(None), slice(None),
+                                     "1"), :]
         elif model == "sixth":
-            data_weighted_sum = data_weighted_sum.loc[(slice(None), slice(None),
-                                                       "6"), :]
-        grouped = data_weighted_sum.groupby(["group"])
-        z_score = pd.DataFrame(grouped[target].max())
+            data_tmp = data_tmp.loc[(slice(None), slice(None),
+                                     "6"), :]
+        grouped = data_tmp.groupby(["group"])
+        # z_score = pd.DataFrame(grouped[target].max())
+
+        # we want to take the max weighted_sum as well as the corresponding components
+        z_score_max = data_tmp.loc[grouped['weighted_sum'].idxmax()]
+        z_score_max = z_score_max.groupby(["group"])
+        z_score = pd.DataFrame(z_score_max['weighted_sum'].max())
+        z_score = z_score.rename(columns={"weighted_sum": target})
         data = pd.concat([data, z_score], axis=1)
     data = data.fillna(impute_value)
     data = data.reindex(sorted(data.columns), axis=1)
