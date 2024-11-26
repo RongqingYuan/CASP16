@@ -19,20 +19,20 @@ for MODEL in "${MODELS[@]}"; do
         echo "Starting tasks for MODEL=$MODEL, IMPUTE_VALUE=$IMPUTE_VALUE"
         
         echo "starting step11_process_new_EU_score.py"
-        python step11_process_new_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_EU_v2_np/ --stage $STAGE --bad_targets T1219 T1246 T1249 T1269 T1295 &
+        python step11_process_new_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_EU_v2_np/ --stage $STAGE --bad_targets  T1246   &
         wait
 
         echo "starting step20_process_new_interface_score.py"
-        python step20_process_new_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_interface_v2_np/ --stage $STAGE --bad_targets T1219 T1246 T1249 T1269 T1295 &
+        python step20_process_new_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_interface_v2_np/ --stage $STAGE --bad_targets  T1246    &
         wait
 
-        echo "starting step17_process_T1249o_EU_score.py"
-        python step17_process_T1249o_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_EU_v2_np/ --stage $STAGE &
-        wait
+        # echo "starting step17_process_T1249o_EU_score.py"
+        # python step17_process_T1249o_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_EU_v2_np/ --stage $STAGE &
+        # wait
 
-        echo "starting step18_process_T1249o_interface_score.py"
-        python step18_process_T1249o_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_interface_v2_np/ --stage $STAGE &
-        wait
+        # echo "starting step18_process_T1249o_interface_score.py"
+        # python step18_process_T1249o_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_interface_v2_np/ --stage $STAGE &
+        # wait
 
         echo "starting step21_bootstrap_sum_new_interface.py"
         python step21_bootstrap_sum_new_interface.py --model $MODEL --impute_value $IMPUTE_VALUE --interface_score_path ./score_interface_v2_np/ --EU_score_path ./score_EU_v2_np/ --output_path ./out_v2_np/ &
