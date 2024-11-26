@@ -6,6 +6,16 @@ import os
 def get_group_by_target(csv_list, csv_path, out_path,
                         model, mode, weights, impute_value=-2):
     data = pd.DataFrame()
+    # get another df for GDT_HA    GDC_SC  reLLG_const       QSE     AL0_P     SphGr    CAD_AA      LDDT  MolPrb_Score
+    GDT_HA_df = pd.DataFrame()
+    GDC_SC_df = pd.DataFrame()
+    reLLG_const_df = pd.DataFrame()
+    QSE_df = pd.DataFrame()
+    AL0_P_df = pd.DataFrame()
+    SphGr_df = pd.DataFrame()
+    CAD_AA_df = pd.DataFrame()
+    LDDT_df = pd.DataFrame()
+    MolPrb_Score_df = pd.DataFrame()
     for csv_file in csv_list:
         target = csv_file.split(".")[0]
         data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
@@ -47,11 +57,40 @@ def get_group_by_target(csv_list, csv_path, out_path,
         z_score = pd.DataFrame(z_score_max['weighted_sum'].max())
         z_score = z_score.rename(columns={"weighted_sum": target})
         data = pd.concat([data, z_score], axis=1)
+
+        GDT_HA_df = pd.concat([GDT_HA_df, z_score_max['GDT_HA'].max()], axis=1)
+        GDC_SC_df = pd.concat([GDC_SC_df, z_score_max['GDC_SC'].max()], axis=1)
+        reLLG_const_df = pd.concat(
+            [reLLG_const_df, z_score_max['reLLG_const'].max()], axis=1)
+        QSE_df = pd.concat([QSE_df, z_score_max['QSE'].max()], axis=1)
+        AL0_P_df = pd.concat([AL0_P_df, z_score_max['AL0_P'].max()], axis=1)
+        SphGr_df = pd.concat([SphGr_df, z_score_max['SphGr'].max()], axis=1)
+        CAD_AA_df = pd.concat([CAD_AA_df, z_score_max['CAD_AA'].max()], axis=1)
+        LDDT_df = pd.concat([LDDT_df, z_score_max['LDDT'].max()], axis=1)
+        MolPrb_Score_df = pd.concat(
+            [MolPrb_Score_df, z_score_max['MolPrb_Score'].max()], axis=1)
     data = data.fillna(impute_value)
     data = data.reindex(sorted(data.columns), axis=1)
     data = data.sort_index()
-    data_csv = f"{model}-{mode}-impute={impute_value}_unweighted.csv"
+    data_csv = f"sum-{model}-{mode}-impute={impute_value}_unweighted.csv"
     data.to_csv(out_path + data_csv)
+
+    def df2csv(df, name, out_path=out_path, model=model, mode=mode, impute_value=impute_value):
+        df = df.fillna(impute_value)
+        df = df.reindex(sorted(df.columns), axis=1)
+        df = df.sort_index()
+        df_csv = f"{name}-{model}-{mode}-impute={impute_value}_unweighted.csv"
+        df.to_csv(out_path + df_csv)
+
+    df2csv(GDT_HA_df, "GDT_HA")
+    df2csv(GDC_SC_df, "GDC_SC")
+    df2csv(reLLG_const_df, "reLLG_const")
+    df2csv(QSE_df, "QSE")
+    df2csv(AL0_P_df, "AL0_P")
+    df2csv(SphGr_df, "SphGr")
+    df2csv(CAD_AA_df, "CAD_AA")
+    df2csv(LDDT_df, "LDDT")
+    df2csv(MolPrb_Score_df, "MolPrb_Score")
 
     data_columns = data.columns
     target_count = {}
@@ -76,7 +115,7 @@ def get_group_by_target(csv_list, csv_path, out_path,
     data = data * pd.Series(EU_weight)
     data["sum"] = data.sum(axis=1)
     data = data.sort_values(by="sum", ascending=False)
-    data_sum_csv = f"{model}-{mode}-impute={impute_value}-EU_weighted_sum.csv"
+    data_sum_csv = f"sum-{model}-{mode}-impute={impute_value}-EU_weighted_sum.csv"
     data.to_csv(out_path + data_sum_csv)
 
     # data_raw = data_raw.reindex(sorted(data_raw.columns), axis=1)
