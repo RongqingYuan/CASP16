@@ -5,29 +5,22 @@ import pandas as pd
 import numpy as np
 
 
-def get_EU_raw_score(results_dir, result_files, out_dir, feature):
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-    print("Processing {}".format(feature))
-    for result_file in result_files:
-        print("Processing {}".format(result_file))
-        result_path = results_dir + result_file
-        data = pd.read_csv(result_path, sep="\t", index_col=0)
-        data = pd.DataFrame(data[feature])
-        min_feature = data[feature].replace(
-            ['N/A', '-'], pd.NA).dropna().astype(float).min()
-        data[feature] = data[feature].replace(
-            ['N/A', '-'], min_feature)
-        data[feature] = data[feature].astype(float)
-    return data[feature]
+def get_EU_raw_score(result_file, feature):
+    # print("Processing {}".format(feature))
+    # print("Processing {}".format(result_file))
+    data = pd.read_csv(result_file, sep="\t", index_col=0)
+    data = pd.DataFrame(data[feature])
+    min_feature = data[feature].replace(
+        ['N/A', '-'], pd.NA).dropna().astype(float).min()
+    data[feature] = data[feature].replace(
+        ['N/A', '-'], min_feature)
+    data[feature] = data[feature].astype(float)
+    return data
 
 
-def get_interface_raw_score(result_file, feature, out_dir, model, mode, impute_value):
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-
-    print("Processing {}".format(feature))
-    print("Processing {}".format(result_file))
+def get_interface_raw_score(result_file, feature):
+    # print("Processing {}".format(feature))
+    # print("Processing {}".format(result_file))
     data = pd.read_csv(result_file, sep="\t", index_col=0)
     nr_interf_group_in_ref = data["nr_interf_group_in_ref"].iloc[0]
     nr_interf_group_interfsize_in_ref = data["nr_interf_group_interfsize_in_ref"].iloc[0]
@@ -53,30 +46,30 @@ def get_interface_raw_score(result_file, feature, out_dir, model, mode, impute_v
     expanded_interface_data = interface_data[feature].apply(
         lambda row: [val for part in row.split(';') for val in part.split(',')])
     all_interface_scores = pd.DataFrame(expanded_interface_data.tolist(), columns=[
-        f'interface_{i}' for i in range(len(expanded_interface_data[0]))])
+        f'interface_{i}' for i in range(len(expanded_interface_data[0]))], index=interface_data.index)
 
     assert all_interface_scores.shape[1] == len(all_interfaces)
     assert all_interface_scores.shape[1] == len(all_interface_sizes)
-
     size_weight = np.log10(all_interface_sizes)
+    if "H1204" in result_file:
+        # breakpoint()
+        ...
     # normalize the size_weight
     size_weight = size_weight / size_weight.sum()
     # each column has a value called None. Impute None with the minimum value of that column
     # Impute None values with the minimum value of each column
     all_interface_scores = all_interface_scores.apply(
         pd.to_numeric, errors='coerce')
+    # all_interface_scores = all_interface_scores.apply(
+    #     lambda x: x.fillna(x.min()), axis=0)
     all_interface_scores = all_interface_scores.apply(
-        lambda x: x.fillna(x.min()), axis=0)
+        lambda x: x.fillna(0), axis=0)
 
-    #  multiply all_interface_scores by size_weight
     weighted_interface_scores = all_interface_scores.astype(
         float).multiply(size_weight, axis=1)
     weighted_sum_score = weighted_interface_scores.sum(axis=1).to_frame()
-    # rename the column to the feature name's split by "_"[0]
     weighted_sum_score.columns = [feature.split("_")[0]]
-
     return weighted_sum_score
-    # breakpoint()
 
     # for result_file in result_files:
     #     data = pd.read_csv(result_path, sep="\t", index_col=0)
@@ -370,25 +363,25 @@ parser.add_argument("--EU_measures", nargs="+",
                         # "ips",
                         # "dockq_ave",
                         # "dockq_wave",
+                        "lddt",
                         "tm",
-                        "lddt"
                     ])
 parser.add_argument("--interface_measures", nargs="+",
                     default=[
-                        "dockq_per_interface",
-                        "qs_best_per_interface",
-                        # "qs_global_mean_inclNone",
+                        "ips_per_interface",
                         "ics_per_interface",
-                        "ips_per_interface"
+                        "qs_best_per_interface",
+                        "dockq_per_interface",
+                        # "qs_global_mean_inclNone",
                     ])
 parser.add_argument("--EU_dir", type=str,
-                    default="/data/data1/conglab/qcong/CASP16/stage1_oligomer_inputs/step15/")
+                    default="/data/data1/conglab/qcong/CASP16/stage1_oligomer_inputs/step16/")
 parser.add_argument("--interface_dir", type=str,
                     # default="/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/nr_interfaces/"
-                    default="/data/data1/conglab/qcong/CASP16/stage1_oligomer_inputs/step15/"
+                    default="/data/data1/conglab/qcong/CASP16/stage1_oligomer_inputs/step16/"
                     )
 parser.add_argument("--out_dir", type=str,
-                    default="./score_all/")
+                    default="./raw_score/")
 parser.add_argument("--model", type=str, default="best")
 parser.add_argument("--mode", type=str, default="all")
 parser.add_argument("--impute_value", type=int, default=-2)
@@ -403,26 +396,7 @@ parser.add_argument("--bad_targets", nargs="+", default=[
     "T2246",
     "T2270o",
 ])
-# removed_targets = [
-#     "T1219",
-#     "T1269",
-#     "H1265",
-#     "T1295",
-#     "T1246",
-# ]
 
-# removed_targets = [
-#     # "T1219",
-#     "T1246",
-#     # "T1269",
-#     "T1269v1o_",
-#     # "T1295",
-#     "T1295o.",
-#     # "T1249",
-#     # "H1265",
-#     "H1265_",
-#     "T2270o",
-# ]
 args = parser.parse_args()
 EU_measures = args.EU_measures
 interface_measures = args.interface_measures
@@ -435,6 +409,8 @@ impute_value = args.impute_value
 stage = args.stage
 bad_targets = args.bad_targets
 
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
 
 if stage == "1":
     bad_targets.extend([
@@ -475,11 +451,6 @@ for remove in to_remove:
     result_files.remove(remove)
 result_files = sorted(result_files)
 
-data_all = pd.DataFrame()
-for measure in EU_measures:
-    EU_df = get_EU_raw_score(EU_dir, result_files, out_dir,
-                             measure)
-    data_all = pd.concat([data_all, EU_df], axis=1)
 
 result_files = [result for result in os.listdir(
     # interface_dir) if result.endswith(".nr_interface.results_v2")]
@@ -493,12 +464,81 @@ for result_file in result_files:
 for remove in to_remove:
     result_files.remove(remove)
 result_files = sorted(result_files)
+
+assert interface_dir == EU_dir
+
+
 for result_file in result_files:
+    data_all = None
     result_file = interface_dir + result_file
     for measure in interface_measures:
-        get_interface_raw_score(result_file, measure, out_dir,
-                                model, mode, impute_value)
+        interface_df = get_interface_raw_score(result_file, measure)
+        if data_all is None:
+            data_all = interface_df
+        else:
+            assert data_all.index.equals(interface_df.index)
+            data_all = pd.concat([data_all, interface_df], axis=1)
+    for measure in EU_measures:
+        EU_df = get_EU_raw_score(result_file, measure)
+        if data_all is None:
+            data_all = EU_df
+        else:
+            assert data_all.index.equals(EU_df.index)
+            data_all = pd.concat([data_all, EU_df], axis=1)
 
+    if data_all.isna().sum().sum() > 0:
+        print(f"Warning: {result_file} has missing values")
+    # set the first column to Model
+    # data_all = data_all.rename(columns={data_all.columns[0]: "Model"})
+    data_all.to_csv(out_dir + result_file.split("/")
+                    [-1].split(".")[0] + ".csv")
+    # BUG 1 some monomer files do not have the correct model 1. We need to manually make the smallest model id to be 1
+    lines = []
+    with open(out_dir + result_file.split("/")[-1].split(".")[0] + ".csv", "r") as f:
+        found_list = []
+        for line in f:
+            if line.startswith("model"):
+                lines.append(line)
+            else:
+                words = line.split(",")
+                model = words[0]
+                group, model_id = model.split("_")
+                if group not in found_list:
+                    found_list.append(group)
+                    if not model_id.startswith("1"):
+                        model_id = "1" + model_id[1:]
+                        print(f"making changes to {group} {model_id}")
+                    new_model = group + "_" + model_id
+                    words[0] = new_model
+                    new_line = ",".join(words)
+                    lines.append(new_line)
+                else:
+                    lines.append(line)
+    with open(out_dir + result_file.split("/")[-1].split(".")[0] + ".csv", "w") as f:
+        for line in lines:
+            f.write(line)
+
+
+# removed_targets = [
+#     "T1219",
+#     "T1269",
+#     "H1265",
+#     "T1295",
+#     "T1246",
+# ]
+
+# removed_targets = [
+#     # "T1219",
+#     "T1246",
+#     # "T1269",
+#     "T1269v1o_",
+#     # "T1295",
+#     "T1295o.",
+#     # "T1249",
+#     # "H1265",
+#     "H1265_",
+#     "T2270o",
+# ]
 
 # parser = argparse.ArgumentParser(
 #     description="options for interface score processing")
