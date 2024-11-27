@@ -8,13 +8,6 @@ def get_group_by_target(csv_list, csv_path, out_path,
     inverse_columns = ["RMS_CA", "RMS_ALL", "err",
                        "RMSD[L]", "MolPrb_Score", "FlexE", "MP_clash", "MP_rotout", "MP_ramout"]
 
-    # if not os.path.exists(out_path + f"impute={impute_value}/"):
-    #     os.makedirs(out_path + f"impute={impute_value}/")
-    # if not os.path.exists(out_path + "raw/"):
-    #     os.makedirs(out_path + "raw/")
-    # if not os.path.exists(sum_path + f"impute={impute_value}/"):
-    #     os.makedirs(sum_path + f"impute={impute_value}/")
-
     data = pd.DataFrame()
     data_raw = pd.DataFrame()
     for csv_file in csv_list:
@@ -103,14 +96,14 @@ def get_group_by_target(csv_list, csv_path, out_path,
 
 
 parser = argparse.ArgumentParser(description="options for sum z-score")
-
 parser.add_argument('--csv_path', type=str,
                     default="./monomer_data_newest/raw_data/")
-parser.add_argument('--out_path', type=str, default="./group_by_target_EU/")
+parser.add_argument('--out_path', type=str, default="./score_T1/")
 parser.add_argument('--model', type=str,
                     help='first, best or sixth', default='best')
 parser.add_argument('--mode', type=str,
                     help='easy, medium, hard or all', default='all')
+parser.add_argument('--phase', type=str, default='1')
 parser.add_argument('--impute_value', type=int, default=-2)
 
 args = parser.parse_args()
@@ -118,114 +111,24 @@ csv_path = args.csv_path
 out_path = args.out_path
 model = args.model
 mode = args.mode
+phase = args.phase
 impute_value = args.impute_value
 
 
-csv_list = [txt for txt in os.listdir(
-    csv_path) if txt.endswith(".csv") and txt.startswith("T")]
+if phase == "0,1,2":
+    csv_list = [txt for txt in os.listdir(
+        csv_path) if txt.endswith(".csv") and txt.startswith("T")]
+elif phase == "0":
+    csv_list = [txt for txt in os.listdir(
+        csv_path) if txt.endswith(".csv") and txt.startswith("T0")]
+elif phase == "1":
+    csv_list = [txt for txt in os.listdir(
+        csv_path) if txt.endswith(".csv") and txt.startswith("T1")]
+elif phase == "2":
+    csv_list = [txt for txt in os.listdir(
+        csv_path) if txt.endswith(".csv") and txt.startswith("T2")]
 csv_list = sorted(csv_list)
 
-
-hard_group = [
-    "T1207-D1",
-    "T1210",
-    "T1220s1",
-    "T1226-D1",
-    "T1228-D3-all",
-    "T1271s1-D1",
-]
-
-medium_group = [
-    "T1201",
-    "T1212-D1",
-    "T1218-D1",
-    "T1218-D2",
-    "T1227s1-D1",
-    "T1228-D1-all",
-    "T1228-D4-all",
-    "T1230s1-D1",
-    "T1237-D1",
-    "T1239-D1-all",
-    "T1239-D3-all",
-    "T1243-D1",
-    "T1244s1-D1",
-    "T1245s2-D1",
-    "T1249v1-D1",
-    "T1257",
-    "T1266-D1",
-    "T1267s1-D1",
-    "T1267s1-D2",
-    "T1267s2-D1",
-    "T1269-D1",
-    "T1269-D2",
-    "T1269-D3",
-    "T1270-D1",
-    "T1270-D2",
-    "T1271s2-D1",
-    "T1271s3-D1",
-    "T1271s4-D1",
-    "T1271s5-D1",
-    "T1271s5-D2",
-    "T1271s7-D1",
-    "T1271s8-D1",
-    "T1271s8-D2",
-    "T1272s2-D1",
-    "T1272s6-D1",
-    "T1272s8-D1",
-    "T1272s9-D1",
-    "T1279-D2",
-    "T1284-D1",
-    "T1295-D1",
-    "T1295-D3",
-    "T1298-D1",
-    "T1298-D2",
-]
-
-easy_group = [
-    "T1206-D1",
-    "T1208s1-D1",
-    "T1208s2-D1",
-    "T1218-D3",
-    "T1228-D2-all",
-    "T1231-D1",
-    "T1234-D1",
-    "T1235-D1",
-    "T1239-D2-all",
-    "T1239-D4-all",
-    "T1240-D1",
-    "T1240-D2",
-    "T1245s1-D1",
-    "T1246-D1",
-    "T1259-D1",
-    "T1271s6-D1",
-    "T1274-D1",
-    "T1276-D1",
-    "T1278-D1",
-    "T1279-D1",
-    "T1280-D1",
-    "T1292-D1",
-    "T1294-D1-all",
-    "T1295-D2",
-    "T1299-D1",
-]
-
-if mode == "hard":
-    csv_list = [csv for csv in csv_list if csv.split(
-        ".")[0] in hard_group]
-    print(len(csv_list))
-elif mode == "medium":
-    csv_list = [csv for csv in csv_list if csv.split(
-        ".")[0] in medium_group]
-    print(len(csv_list))
-elif mode == "easy":
-    csv_list = [csv for csv in csv_list if csv.split(
-        ".")[0] in easy_group]
-    print(len(csv_list))
-elif mode == "all":
-    pass
-
-for csv in csv_list:
-    print(csv)
 
 if not os.path.exists(out_path):
     os.makedirs(out_path)
@@ -243,3 +146,105 @@ for feature in features:
     get_group_by_target(csv_list, csv_path, out_path,
                         feature, model, mode, impute_value=impute_value)
     print("Finished processing {}".format(feature))
+
+# for csv in csv_list:
+#     print(csv)
+
+# if mode == "hard":
+#     csv_list = [csv for csv in csv_list if csv.split(
+#         ".")[0] in hard_group]
+#     print(len(csv_list))
+# elif mode == "medium":
+#     csv_list = [csv for csv in csv_list if csv.split(
+#         ".")[0] in medium_group]
+#     print(len(csv_list))
+# elif mode == "easy":
+#     csv_list = [csv for csv in csv_list if csv.split(
+#         ".")[0] in easy_group]
+#     print(len(csv_list))
+# elif mode == "all":
+#     pass
+
+
+# hard_group = [
+#     "T1207-D1",
+#     "T1210",
+#     "T1220s1",
+#     "T1226-D1",
+#     "T1228-D3-all",
+#     "T1271s1-D1",
+# ]
+
+# medium_group = [
+#     "T1201",
+#     "T1212-D1",
+#     "T1218-D1",
+#     "T1218-D2",
+#     "T1227s1-D1",
+#     "T1228-D1-all",
+#     "T1228-D4-all",
+#     "T1230s1-D1",
+#     "T1237-D1",
+#     "T1239-D1-all",
+#     "T1239-D3-all",
+#     "T1243-D1",
+#     "T1244s1-D1",
+#     "T1245s2-D1",
+#     "T1249v1-D1",
+#     "T1257",
+#     "T1266-D1",
+#     "T1267s1-D1",
+#     "T1267s1-D2",
+#     "T1267s2-D1",
+#     "T1269-D1",
+#     "T1269-D2",
+#     "T1269-D3",
+#     "T1270-D1",
+#     "T1270-D2",
+#     "T1271s2-D1",
+#     "T1271s3-D1",
+#     "T1271s4-D1",
+#     "T1271s5-D1",
+#     "T1271s5-D2",
+#     "T1271s7-D1",
+#     "T1271s8-D1",
+#     "T1271s8-D2",
+#     "T1272s2-D1",
+#     "T1272s6-D1",
+#     "T1272s8-D1",
+#     "T1272s9-D1",
+#     "T1279-D2",
+#     "T1284-D1",
+#     "T1295-D1",
+#     "T1295-D3",
+#     "T1298-D1",
+#     "T1298-D2",
+# ]
+
+# easy_group = [
+#     "T1206-D1",
+#     "T1208s1-D1",
+#     "T1208s2-D1",
+#     "T1218-D3",
+#     "T1228-D2-all",
+#     "T1231-D1",
+#     "T1234-D1",
+#     "T1235-D1",
+#     "T1239-D2-all",
+#     "T1239-D4-all",
+#     "T1240-D1",
+#     "T1240-D2",
+#     "T1245s1-D1",
+#     "T1246-D1",
+#     "T1259-D1",
+#     "T1271s6-D1",
+#     "T1274-D1",
+#     "T1276-D1",
+#     "T1278-D1",
+#     "T1279-D1",
+#     "T1280-D1",
+#     "T1292-D1",
+#     "T1294-D1-all",
+#     "T1295-D2",
+#     "T1299-D1",
+# ]
