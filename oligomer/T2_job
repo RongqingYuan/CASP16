@@ -17,11 +17,11 @@ for MODEL in "${MODELS[@]}"; do
         echo "Running with MODEL=$MODEL, IMPUTE_VALUE=$IMPUTE_VALUE"
 
         echo "starting step11_process_new_EU_score.py"
-        python step11_process_new_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_EU_v2_T2/ --stage $STAGE --bad_targets T2219 T2246 T2269 T2295 &
+        python step11_process_new_EU_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_EU_v2_T2/ --stage $STAGE --bad_targets  T2246   &
         wait
 
         echo "starting step20_process_new_interface_score.py"
-        python step20_process_new_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_interface_v2_T2/ --stage $STAGE --bad_targets T2219 T2246 T2269 T2295 &
+        python step20_process_new_interface_score.py --model $MODEL --impute_value $IMPUTE_VALUE --out_dir ./score_interface_v2_T2/ --stage $STAGE --bad_targets  T2246   &
         wait
 
         # 如果需要恢复 step17 和 step18，可以取消注释
