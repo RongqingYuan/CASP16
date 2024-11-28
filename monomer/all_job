@@ -8,19 +8,26 @@
 #SBATCH -J all_job
 
 
-MODEL=first
+MODEL=best
 IMPUTE_VALUE=-2
 MODE=all
-SCORE_PATH=./monomer_data_Sep_15_EU/
+SCORE_PATH=./monomer_data_newest/
+SCORE_PATH_RAW=./monomer_data_newest/raw_data/
+SCORE_PATH_PROCESSED=./monomer_data_newest/processed/
+STAGE=all
 
 rm -r $SCORE_PATH
 
 echo "starting step0_data_process_EU.py"
-python -u step0_data_process_EU.py --output_path $SCORE_PATH &
+python -u step0_data_process_EU.py --output_path $SCORE_PATH --stage $STAGE &
 wait
 
 echo "starting step10_sum_z-score.py"
 python -u step10_sum_z-score.py --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE &
+wait
+
+echo  "starting step11_get_raw_score.py"
+python -u step11_get_raw_score.py --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE &
 wait
 
 echo "starting step28_bootstrap_sum.py"
