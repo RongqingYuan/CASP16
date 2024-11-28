@@ -16,8 +16,9 @@ monomer/sum*/
 monomer/bootstrap*/
 monomer/group_by_target*/
 monomer/cluster_target/
-monomer/*err
-monomer/*log
+monomer/*.err
+monomer/*.log
+monomer/*.txt
 monomer/by_EU/
 monomer/group_by_target_EU/
 monomer/group_by_target_raw_EU/
@@ -32,9 +33,18 @@ monomer/baseline_data_Sep_15_EU/
 monomer/sum_raw_CASP15/
 monomer/compare_stages_tmp/
 monomer/monomer_data_T0_EU/
+monomer/monomer_data_T1/
 monomer/monomer_data_T2_EU/
 monomer/monomer_data_T0_EU_copy/
 monomer/heatmap*/
+monomer/score_*/
+monomer/out_*/
+monomer/check_with_qian/
+monomer/for_Jing/
+monomer/for_Arne/
+monomer/for_Dima/
+monomer/monomer_data_newest/
+monomer/CASP16_figures/
 
 
 monomer/best/*
@@ -77,6 +87,7 @@ oligomer/oligomer_data
 oligomer/sum/
 oligomer/group_by_target/
 oligomer/oligomer_data_Sep*/
+oligomer/oligomer_data_Nov*/
 oligomer/bootstrap_new_EU/
 oligomer/bootstrap_analysis_new_EU/
 oligomer/bootstrap*/
@@ -91,6 +102,16 @@ oligomer/*log
 oligomer/*txt
 oligomer/stoichiometry/
 oligomer/heatmap_interface*/
+oligomer/score_EU*/
+oligomer/score_interface*/
+oligomer/out_*/
+oligomer/check_with_qian/
+oligomer/check_oligomer/
+oligomer/for_Arne/
+oligomer/for_Dima/
+oligomer/raw_score/
+oligomer/z_score/
+oligomer/score_all/
 
 oligomer/0_CASP16_EU_score/*
 !oligomer/0_CASP16_EU_score/
@@ -109,7 +130,8 @@ oligomer/for_Jing_H1265/*
 !oligomer/for_Jing_H1265/*job
 
 M_target/M_target_csv/
-M_target/M_target_csv_v1
+M_target/M_target_csv_v1/
+M_target/M_target_csv_v1_archive/
 M_target/interface_score/
 M_target/interface_score_v1/
 M_target/interface_score_large/
@@ -122,14 +144,20 @@ M_target/bootstrap_prot_nucl_interface_score/
 M_target/bootstrap_prot_nucl_interface_score_v1/
 M_target/bootstrap_prot_prot_interface_score/
 M_target/bootstrap_prot_prot_interface_score_v1/
+M_target/bootstrap_prot_prot_interface_score_for_rhiju/
 M_target/hybrid_data_Oct_11/
 M_target/sum_EU/
 M_target/group_by_target_EU/
 M_target/bootstrap_EU/
 M_target/heatmap*/
-
+M_target/*err
+M_target/*log
 
 tmp/
 
 oligomer_old/
 monomer_old/
+
+monomer_rank/
+monomer_rank_1/
+stage1_oligomer_inputs/
