@@ -14,7 +14,7 @@ MODE=all
 SCORE_PATH=./monomer_data_newest/
 SCORE_PATH_RAW=./monomer_data_newest/raw_data/
 SCORE_PATH_PROCESSED=./monomer_data_newest/processed/
-STAGE=all
+STAGE=0,1,2
 
 rm -r $SCORE_PATH
 
