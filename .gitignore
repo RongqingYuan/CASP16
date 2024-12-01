@@ -32,8 +32,9 @@ monomer/csv_tmp_CASP15/
 monomer/baseline_data_Sep_15_EU/
 monomer/sum_raw_CASP15/
 monomer/compare_stages_tmp/
-monomer/monomer_data_T0_EU/
 monomer/monomer_data_T1/
+monomer/monomer_data_T0_EU/
+monomer/monomer_data_T1_EU/
 monomer/monomer_data_T2_EU/
 monomer/monomer_data_T0_EU_copy/
 monomer/heatmap*/
@@ -45,6 +46,7 @@ monomer/for_Arne/
 monomer/for_Dima/
 monomer/monomer_data_newest/
 monomer/CASP16_figures/
+monomer/monomer_data_fa/
 
 
 monomer/best/*
@@ -112,6 +114,11 @@ oligomer/for_Dima/
 oligomer/raw_score/
 oligomer/z_score/
 oligomer/score_all/
+oligomer/CASP16_figures_olig/
+oligomer/for_Jing_H1265/
+oligomer/score_T0*/
+oligomer/score_T1*/
+oligomer/score_T2*/
 
 oligomer/0_CASP16_EU_score/*
 !oligomer/0_CASP16_EU_score/
@@ -125,9 +132,9 @@ oligomer/2_compare_baseline/*
 oligomer/3_stoichiometry/*
 !oligomer/3_stoichiometry/
 !oligomer/3_stoichiometry/*py
-oligomer/for_Jing_H1265/*
-!oligomer/for_Jing_H1265/
-!oligomer/for_Jing_H1265/*job
+# oligomer/for_Jing_H1265/*
+# !oligomer/for_Jing_H1265/
+# !oligomer/for_Jing_H1265/*job
 
 M_target/M_target_csv/
 M_target/M_target_csv_v1/
@@ -161,3 +168,4 @@ monomer_old/
 monomer_rank/
 monomer_rank_1/
 stage1_oligomer_inputs/
+oligomer_processed_data/
