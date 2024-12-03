@@ -201,6 +201,7 @@ features = [
     # "ICS(F1)",
     # "lDDT",
     # "DockQ_Avg",
+    "DockQ_Avg",
     # "IPS(JaccCoef)",
     # "TMscore",
 ]
@@ -218,7 +219,11 @@ def get_group_by_target(csv_path, csv_list, feature, model, mode):
     data_raw = pd.DataFrame()
     for csv_file in csv_list:
         data_tmp = pd.read_csv(csv_path + csv_file, index_col=0)
-        data_tmp = pd.DataFrame(data_tmp[feature])
+        try:
+            data_tmp = pd.DataFrame(data_tmp[feature])
+        except KeyError:
+            print("KeyError: ", csv_file)
+            continue
         # convert to float
         data_tmp[feature] = data_tmp[feature].astype(float)
         # breakpoint()
