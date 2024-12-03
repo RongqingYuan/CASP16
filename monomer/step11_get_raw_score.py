@@ -141,7 +141,8 @@ features = ['GDT_TS',
             # 'MP_ramout',
             # 'MP_ramfv',
             'reLLG_lddt',
-            'reLLG_const']
+            'reLLG_const'
+            ]
 for feature in features:
     get_group_by_target(csv_list, csv_path, out_path,
                         feature, model, mode, impute_value=impute_value)
