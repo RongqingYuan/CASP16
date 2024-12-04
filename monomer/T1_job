@@ -26,8 +26,8 @@ wait
 # python -u step10_sum_z-score.py   --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE --csv_path $SCORE_PATH_PROCESSED --out_path ./score_T1/ &
 # wait
 
-echo  "starting step11_get_raw_score.py"
-python -u step11_get_raw_score.py --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE --phase $STAGE --csv_path $SCORE_PATH_RAW  --out_path ./score_T1/ &
+echo  "starting get_raw_score.py"
+python -u get_raw_score.py --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE --phase $STAGE --csv_path $SCORE_PATH_RAW  --out_path ./score_T1/ &
 wait
 
 # echo "starting step28_bootstrap_sum.py"
