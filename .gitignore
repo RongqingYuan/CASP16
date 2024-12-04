@@ -47,6 +47,7 @@ monomer/for_Dima/
 monomer/monomer_data_newest/
 monomer/CASP16_figures/
 monomer/monomer_data_fa/
+monomer/monomer_data_CASP15/
 
 
 monomer/best/*
@@ -164,6 +165,9 @@ tmp/
 
 oligomer_old/
 monomer_old/
+
+
+M_target_old/
 
 monomer_rank/
 monomer_rank_1/
