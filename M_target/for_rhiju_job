@@ -1,0 +1,55 @@
+#!/bin/bash
+#SBATCH -p 256GB
+#SBATCH -n 48
+#SBATCH --mem=192g
+#SBATCH -t 28-00:00:00
+#SBATCH -o for_rhiju.log
+#SBATCH -e for_rhiju.err
+#SBATCH -J for_rhiju
+
+# step0 basic:
+python step0_save_M_score.py &
+wait
+
+# step1 basic:
+python step1_process_M_score.py &
+wait
+
+# step1 for protein protein interface. protein protein interface has special cases so we use a different output_dir (some targets do not have protein protein interface)
+python step1_process_M_score.py --features prot_per_interface_qs_global prot_per_interface_ics_trimmed prot_per_interface_ips_trimmed --output_dir ./interface_score_prot_prot_v1/ &
+wait
+
+# step2 basic:
+python step2_sum_M_score_bootstrap.py &
+wait
+
+# step2 for protein protein interface: (there are special cases for protein protein interface so we use a different interface_score_path)
+python step2_sum_M_score_bootstrap.py --measures GlobDockQ TMscore lDDT prot_per_interface_qs_global prot_per_interface_ics_trimmed prot_per_interface_ips_trimmed --interface_score_path ./interface_score_prot_prot_v1/ --output_path ./bootstrap_prot_prot_interface_score_for_rhiju/ &
+wait
+
+# step2 for protein nucleotide interface:
+python step2_sum_M_score_bootstrap.py --measures prot_nucl_per_interface_qs_global prot_nucl_per_interface_ics_trimmed prot_nucl_per_interface_ips_trimmed --output_path ./bootstrap_prot_nucl_interface_score_v1/ &
+wait
+
+# step7 basic:
+python step7_heatmap_interface_score.py &
+wait
+
+# step7 for protein protein interface:
+python step7_heatmap_interface_score.py --measures GlobDockQ TMscore lDDT prot_per_interface_qs_global prot_per_interface_ics_trimmed prot_per_interface_ips_trimmed --interface_score_path ./interface_score_prot_prot_v1/  --output_path ./heatmap_prot_prot_interface_for_rhiju/ &
+wait
+
+# step7 for protein nucleotide interface:
+python step7_heatmap_interface_score.py --measures prot_nucl_per_interface_qs_global prot_nucl_per_interface_ics_trimmed prot_nucl_per_interface_ips_trimmed --output_path ./heatmap_prot_nucl_interface/ &
+wait
+
+# # step12 basic:
+# python step12_heatmap_target_score_large.py &
+# wait
+
+# # step12 for protein protein interface:
+# python step12_heatmap_target_score_large.py --measures prot_per_interface_qs_global prot_per_interface_ics_trimmed prot_per_interface_ips_trimmed --interface_score_path ./interface_score_large/ --output_path ./heatmap_prot_prot_interface_large/ &
+# wait
+
+# # step12 for protein nucleotide interface:
+# python step12_heatmap_target_score_large.py --measures prot_nucl_per_interface_qs_global prot_nucl_per_interface_ics_trimmed prot_nucl_per_interface_ips_trimmed --interface_score_path ./interface_score_large/ --output_path ./heatmap_prot_nucl_interface_large/ &
