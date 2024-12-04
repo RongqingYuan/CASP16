@@ -18,8 +18,13 @@ def get_group_by_target(csv_list, csv_path, out_path,
             data_weighted_sum = data_weighted_sum.rename(
                 columns={0: target})
             data_tmp['weighted_sum'] = data_weighted_sum
-        data_tmp.index = data_tmp.index.str.extract(
-            r'(T\w+)TS(\w+)_(\w+)-(D\w+)').apply(lambda x: (f"{x[0]}-{x[3]}", f"TS{x[1]}", x[2]), axis=1)
+        if target.startswith("T"):
+            data_tmp.index = data_tmp.index.str.extract(
+                r'(T\w+)TS(\w+)_(\w+)o').apply(lambda x: (f"{x[0]}", f"TS{x[1]}", x[2]), axis=1)
+        elif target.startswith("H"):
+            data_tmp.index = data_tmp.index.str.extract(
+                r'(H\w+)TS(\w+)_(\w+)').apply(lambda x: (f"{x[0]}", f"TS{x[1]}", x[2]), axis=1)
+
         data_tmp.index = pd.MultiIndex.from_tuples(
             data_tmp.index, names=['target', 'group', 'model'])
 
@@ -52,28 +57,53 @@ def get_group_by_target(csv_list, csv_path, out_path,
     data = data.sort_index()
     data_csv = f"{model}-{mode}-impute={impute_value}_unweighted.csv"
     data.to_csv(out_path + data_csv)
+    good_columns = []
+    not_found = []
+    target2weight = {}
+    with open('target_weights') as f:
+        for line in f:
+            target, weight = line.split()
+            weight = float(weight) ** (1/3)
+            print(f"Target {target} has weight {weight}")
+            if target not in target2weight:
+                target2weight[target] = weight
+            else:
+                if target2weight[target] != weight:
+                    print(
+                        f"Duplicate target {target}, and the weights are different")
+                    exit(1)
+                else:
+                    print(
+                        f"Duplicate target {target}, but the weights are the same, so it's fine")
+    for target in data.columns:
+        if target in target2weight:
+            good_columns.append(target)
+            data[target] = data[target] * target2weight[target]
+        else:
+            not_found.append(target)
+    # breakpoint()
+    # data_columns = data.columns
+    # target_count = {}
+    # for EU in data_columns:
+    #     target = EU.split("v")[0]
+    #     if target not in target_count:
+    #         target_count[target] = 0
+    #     target_count[target] += 1
+    # # use the inverse of the target_count as the weight
+    # target_weight = {key: 1/value for key, value in target_count.items()}
+    # # assign EU_weight based on the target_weight
+    # EU_weight = {EU: target_weight[EU.split("v")[0]]
+    #              for EU in data_columns}
+    # for EU in data_columns:
+    #     print(EU, EU_weight[EU])
+    # # data["sum"] = data.sum(axis=1)
+    # # data = data.sort_values(by="sum", ascending=False)
+    # # data_sum_unweighted_csv = f"{feature}-{model}-{mode}-impute={impute_value}-sum_unweighted.csv"
+    # # data.to_csv(out_path + data_sum_unweighted_csv)
 
-    data_columns = data.columns
-    target_count = {}
-    for EU in data_columns:
-        target = EU.split("-")[0]
-        if target not in target_count:
-            target_count[target] = 0
-        target_count[target] += 1
-    # use the inverse of the target_count as the weight
-    target_weight = {key: 1/value for key, value in target_count.items()}
-    # assign EU_weight based on the target_weight
-    EU_weight = {EU: target_weight[EU.split("-")[0]]
-                 for EU in data_columns}
-    for EU in data_columns:
-        print(EU, EU_weight[EU])
-    # data["sum"] = data.sum(axis=1)
-    # data = data.sort_values(by="sum", ascending=False)
-    # data_sum_unweighted_csv = f"{feature}-{model}-{mode}-impute={impute_value}-sum_unweighted.csv"
-    # data.to_csv(out_path + data_sum_unweighted_csv)
+    # # data.drop(columns=["sum"], inplace=True)
+    # data = data * pd.Series(EU_weight)
 
-    # data.drop(columns=["sum"], inplace=True)
-    data = data * pd.Series(EU_weight)
     data["sum"] = data.sum(axis=1)
     data = data.sort_values(by="sum", ascending=False)
     data_sum_csv = f"{model}-{mode}-impute={impute_value}-EU_weighted_sum.csv"
@@ -88,7 +118,7 @@ def get_group_by_target(csv_list, csv_path, out_path,
 parser = argparse.ArgumentParser(description="options for sum z-score")
 
 parser.add_argument('--csv_path', type=str,
-                    default="./monomer_data_newest/processed/")
+                    default="./z_score/")
 parser.add_argument('--out_path', type=str, default="./score_all/")
 parser.add_argument('--model', type=str,
                     help='first, best or sixth', default='best')
@@ -97,10 +127,10 @@ parser.add_argument('--mode', type=str,
 parser.add_argument('--impute_value', type=int, default=-2)
 parser.add_argument("--weights", type=float, nargs='+',
                     default=[
-                        1/6, 1/16, 1/6,
+                        1/6,  1/6,
                         1/6,
-                        1/16, 1/8,
-                        1/8, 1/16,
+                        1/6,
+                        1/6,
                         1/16,
                     ])
 
@@ -114,7 +144,7 @@ weights = args.weights
 
 
 csv_list = [txt for txt in os.listdir(
-    csv_path) if txt.endswith(".csv") and txt.startswith("T")]
+    csv_path) if txt.endswith(".csv")]
 csv_list = sorted(csv_list)
 
 

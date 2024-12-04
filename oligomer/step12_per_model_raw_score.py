@@ -394,7 +394,7 @@ parser.add_argument("--bad_targets", nargs="+", default=[
     "T1295o.",
     "H1265_",
     "T2246",
-    "T2270o",
+    # "T2270o",
 ])
 
 args = parser.parse_args()
@@ -517,6 +517,23 @@ for result_file in result_files:
     with open(out_dir + result_file.split("/")[-1].split(".")[0] + ".csv", "w") as f:
         for line in lines:
             f.write(line)
+    data = pd.read_csv(out_dir + result_file.split("/")[-1].split(".")[0] + ".csv",
+                       index_col=0)
+    data = data[~data.index.str.contains('_6')]
+    z_score_dir = "./z_score/"
+    if not os.path.exists(z_score_dir):
+        os.makedirs(z_score_dir)
+    initial_z = (data - data.mean()) / data.std(ddof=0)
+    new_z_score = pd.DataFrame(index=data.index, columns=data.columns)
+    for column in data.columns:
+        filtered_data = data[column][initial_z[column] >= -2]
+        new_mean = filtered_data.mean(skipna=True)
+        new_std = filtered_data.std(skipna=True, ddof=0)
+        new_z_score[column] = (data[column] - new_mean) / new_std
+    new_z_score = new_z_score.fillna(impute_value)
+    new_z_score = new_z_score.where(new_z_score > impute_value, impute_value)
+    new_z_score.to_csv(z_score_dir + result_file.split("/")
+                       [-1].split(".")[0] + ".csv")
 
 
 # removed_targets = [
