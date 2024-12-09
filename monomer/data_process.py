@@ -6,8 +6,6 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--phase', type=str, default="0,1,2")
 parser.add_argument('--input_path', type=str,
-                    # default="/home2/s439906/data/CASP16/monomers_EU_merge_v/"
-                    # default="/home2/s439906/data/CASP16/monomer_inputs/"
                     default="/home2/s439906/data/CASP16/inputs/"
                     )
 parser.add_argument('--output_path', type=str,
