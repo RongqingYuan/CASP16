@@ -37,19 +37,19 @@ def get_group_by_target(csv_list, csv_path, out_path,
         grouped = pd.DataFrame(grouped[feature].max())
         grouped[feature] = grouped[feature].astype(float)
         grouped = grouped.sort_values(by=feature, ascending=False)
-        initial_z = (grouped - grouped.mean()) / grouped.std()
-        new_z_score = pd.DataFrame(
-            index=grouped.index, columns=grouped.columns)
-        filtered_data = grouped[feature][initial_z[feature] >= -2]
-        new_mean = filtered_data.mean(skipna=True)
-        new_std = filtered_data.std(skipna=True)
-        new_z_score[feature] = (grouped[feature] - new_mean) / new_std
-        new_z_score = new_z_score.fillna(impute_value)
-        new_z_score = new_z_score.where(
-            new_z_score > impute_value, impute_value)
-        new_z_score = new_z_score.rename(
-            columns={feature: csv_file.split(".")[0]})
-        data = pd.concat([data, new_z_score], axis=1)
+        # initial_z = (grouped - grouped.mean()) / grouped.std()
+        # new_z_score = pd.DataFrame(
+        #     index=grouped.index, columns=grouped.columns)
+        # filtered_data = grouped[feature][initial_z[feature] >= -2]
+        # new_mean = filtered_data.mean(skipna=True)
+        # new_std = filtered_data.std(skipna=True)
+        # new_z_score[feature] = (grouped[feature] - new_mean) / new_std
+        # new_z_score = new_z_score.fillna(impute_value)
+        # new_z_score = new_z_score.where(
+        #     new_z_score > impute_value, impute_value)
+        # new_z_score = new_z_score.rename(
+        #     columns={feature: csv_file.split(".")[0]})
+        # data = pd.concat([data, new_z_score], axis=1)
 
         grouped = grouped.rename(columns={feature: csv_file.split(".")[0]})
         data_raw = pd.concat([data_raw, grouped], axis=1)
