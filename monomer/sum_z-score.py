@@ -7,7 +7,7 @@ import os
 def get_group_by_target(csv_list, csv_path, out_path,
                         model, mode, phase, impute_value, weights, EU_weight):
     data = pd.DataFrame()
-    # get another df for GDT_HA    GDC_SC  reLLG_const       QSE     AL0_P     SphGr    CAD_AA      LDDT  MolPrb_Score
+    # get another df for GDT_HA, GDC_SC, reLLG_const, QSE, AL0_P, SphGr, CAD_AA, LDDT, MolPrb_Score
     GDT_HA_df = pd.DataFrame()
     GDC_SC_df = pd.DataFrame()
     reLLG_const_df = pd.DataFrame()
@@ -35,7 +35,7 @@ def get_group_by_target(csv_list, csv_path, out_path,
         data_tmp.index = pd.MultiIndex.from_tuples(
             data_tmp.index, names=['target', 'group', 'model'])
 
-        # no more duplicated index to worry about
+        # # no more duplicated index to worry about
 
         # if data_tmp.index.duplicated().any():
         #     print(f"Duplicated index in {csv_file}")
@@ -104,6 +104,8 @@ def get_group_by_target(csv_list, csv_path, out_path,
     data.to_csv(out_path + data_csv)
     print(data.shape)
 
+    # # it is commented out because the EU_weight is already calculated from another file
+
     # data_columns = data.columns
     # target_count = {}
     # for EU in data_columns:
@@ -122,15 +124,6 @@ def get_group_by_target(csv_list, csv_path, out_path,
     data = data.sort_values(by="sum", ascending=False)
     data_sum_csv = f"sum-{model}-{mode}-{phase}-impute={impute_value}-EU_weighted_sum.csv"
     data.to_csv(out_path + data_sum_csv)
-
-    # # top_n = 28
-    # # # get the top n index
-    # # top_n_index = data.index[:top_n]
-
-    # data_copy = data_copy * pd.Series(EU_weight)
-    # # data_copy["sum"] = data_copy.sum(axis=1)
-    # data_missing_csv = f"sum-{model}-{mode}-{phase}-impute={impute_value}-EU_weighted_with_missing.csv"
-    # data_copy.to_csv(out_path + data_missing_csv)
 
     def df2csv(df, name, out_path=out_path,
                model=model, mode=mode, phase=phase, impute_value=impute_value, EU_weight=EU_weight):
@@ -195,7 +188,6 @@ csv_list = [txt for txt in os.listdir(
 csv_list = sorted(csv_list)
 
 metadata_file = "./monomer_EU_info"
-# difficulty_group = {"easy": [], "medium": [], "difficult": []}
 EU_weight = {}
 with open(metadata_file, "r") as f:
     for line in f:
@@ -211,7 +203,6 @@ with open(metadata_file, "r") as f:
             weight = float(Fraction(words[4]))
             EU = f"{protein}-{domain}"
             EU_weight[EU] = weight
-            # difficulty_group[difficulty].append(EU)
 
 difficulty_group = {"easy": [], "medium": [], "difficult": []}
 difficulty_file = "./step7_result"
@@ -260,7 +251,6 @@ elif mode == "easy":
                  for EU in csv_list}
 elif mode == "all":
     pass
-# breakpoint()
 if phase == "0":
     csv_list = [csv for csv in csv_list if csv.split(".")[0].startswith("T0")]
     EU_weight = {EU.split(".")[0]: EU_weight[EU.split(".")[0]]
@@ -281,15 +271,3 @@ if not os.path.exists(out_path):
     os.makedirs(out_path)
 get_group_by_target(csv_list, csv_path, out_path,
                     model, mode, phase, impute_value, weights, EU_weight)
-
-
-# features = ['GDT_TS',
-#             'GDT_HA', 'GDC_SC', 'GDC_ALL', 'RMS_CA', 'RMS_ALL', 'AL0_P',
-#             'AL4_P', 'ALI_P', 'LGA_S', 'RMSD[L]', 'MolPrb_Score', 'LDDT',
-#             'SphGr',
-#             'CAD_AA', 'RPF', 'TMscore', 'FlexE', 'QSE', 'CAD_SS', 'MP_clash',
-#             # 'MP_rotout',
-#             # 'MP_ramout',
-#             # 'MP_ramfv',
-#             'reLLG_lddt',
-#             'reLLG_const']
