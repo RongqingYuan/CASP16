@@ -19,25 +19,6 @@ STAGE=1
 rm -r $SCORE_PATH
 
 echo "starting data_process.py"
-python -u data_process.py --output_path $SCORE_PATH --phase $STAGE &
-wait
-
-# echo "starting step10_sum_z-score.py"
-# python -u step10_sum_z-score.py   --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE --csv_path $SCORE_PATH_PROCESSED --out_path ./score_T1/ &
-# wait
-
+python -u data_process.py --output_path $SCORE_PATH --phase $STAGE 
 echo  "starting get_raw_score.py"
-python -u get_raw_score.py --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE --phase $STAGE --csv_path $SCORE_PATH_RAW  --out_path ./score_T1/ &
-wait
-
-# echo "starting step28_bootstrap_sum.py"
-# python -u step28_bootstrap_sum.py --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE --score_path ./score_T1/ --output_path ./out_T1/ &
-# wait
-
-# echo "starting step32_heatmap.py"
-# python -u step32_heatmap.py --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE  --score_path ./score_T1/ --output_path ./out_T1/ &
-# wait
-
-# echo "starting step30_bootstrap_t-test.py"
-# python -u step30_bootstrap_t-test.py --bootstrap_rounds 100 --model best --equal_weight --impute_value -2 &
-# wait
+python -u get_raw_score.py --model $MODEL --impute_value $IMPUTE_VALUE --mode $MODE --phase $STAGE --csv_path $SCORE_PATH_RAW  --out_path ./score_T1/
