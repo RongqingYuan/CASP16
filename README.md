@@ -11,3 +11,8 @@ For monomer I am using my pipeline. For oligomers I am directly taking the resul
 `get_raw_scores.py` reads the input files and generates the raw scores for each model, which will further be used for analysis of performances.
 
 `sum_z_scores.py` reads the z-scores and gets sum of z-scores for each measure. This will be used for plotting ranks.
+
+the jupyter notebooks are used for plotting the results.
+
+
+## Oligomer
