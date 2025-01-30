@@ -12,6 +12,10 @@ For monomer I am using my pipeline. For oligomers I am directly taking the resul
 
 `sum_z_scores.py` reads the z-scores and gets sum of z-scores for each measure. This will be used for plotting ranks.
 
+`monomer_EU_info` is the metadata for the monomer EU data. It contains the information of each EU.
+
+`step7_results` is the file for difficulty partitioning.
+
 the jupyter notebooks are used for plotting the results.
 
 
