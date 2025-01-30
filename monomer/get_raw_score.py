@@ -3,12 +3,9 @@ import pandas as pd
 import os
 
 
-def get_group_by_target(csv_list, csv_path, out_path,
-                        feature, model, mode, impute_value=-2):
+def get_group_by_target(csv_list, csv_path, out_path, feature, model, mode):
     inverse_columns = ["RMS_CA", "RMS_ALL", "err",
                        "RMSD[L]", "MolPrb_Score", "FlexE", "MP_clash", "MP_rotout", "MP_ramout"]
-
-    data = pd.DataFrame()
     data_raw = pd.DataFrame()
     for csv_file in csv_list:
         print(f"Processing {csv_file}")
