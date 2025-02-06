@@ -1,9 +1,10 @@
-# Critical Assessment of Structure Prediction Round XVI (CASP16)
+# CASP16 (Critical Assessment of Structure Prediction Round XVI)
 
 This is the codebase for CASP16 monomer and oligomer assessment.
 
 Please check each directory for source code to rank groups and plot results.
-For monomer I am using my pipeline. For oligomers I am directly taking the results from Qian for convenience because there are complications in the methodology. Both are independently validated by each of us.
+
+For monomer I am using my pipeline. For oligomers I am directly taking the results from Qian for convenience. Both are independently validated by each of us.
 
 ## Monomer
 
@@ -13,9 +14,14 @@ For monomer I am using my pipeline. For oligomers I am directly taking the resul
 
 `sum_z_scores.py` reads the z-scores and gets sum of z-scores for each measure. This will be used for plotting ranks.
 
+`ranking.ipynb` is the script for ranking the models.
+
+`head_to_head_playground.ipynb` is the script for generating the head-to-head test results.
+
 The above scripts will provide the input for downstream analysis.
 Other jupyter notebooks are used for plotting the results.
 
+`CASP15_data_job` is the job for processing the data from CASP15.
 
 `monomer_EU_info` is the metadata for the monomer EU data. It contains the information of each EU.
 
@@ -33,6 +39,8 @@ Other jupyter notebooks are used for plotting the results.
 
 The above scripts will provide the input for downstream analysis.
 Other jupyter notebooks are used for plotting the results.
+
+`process_data_CASP15.py` processes the data from CASP15.
 
 `stoich_bg_distribution.csv` is the file for background distribution of stoichiometry in PDB.
 
