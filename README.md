@@ -20,3 +20,14 @@ the jupyter notebooks are used for plotting the results.
 
 
 ## Oligomer
+
+
+## Qian's data
+
+Some of the data are directly from Qian's pipeline. The notation is as follows:
+
+stage1: raw data process
+
+stage2: produce rankings
+
+stage3: get insights from the data
