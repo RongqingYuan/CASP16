@@ -1,4 +1,4 @@
-# Critical Assessment of protein Structure Prediction Round XVI (CASP16)
+# Critical Assessment of Structure Prediction Round XVI (CASP16)
 
 This is the codebase for CASP16 monomer and oligomer assessment.
 
@@ -12,6 +12,10 @@ For monomer I am using my pipeline. For oligomers I am directly taking the resul
 `get_raw_scores.py` reads the input files and generates the raw scores for each model, which will further be used for analysis of performances.
 
 `sum_z_scores.py` reads the z-scores and gets sum of z-scores for each measure. This will be used for plotting ranks.
+
+`monomer_EU_info` is the metadata for the monomer EU data. It contains the information of each EU.
+
+`step7_results` is the file for difficulty partitioning.
 
 the jupyter notebooks are used for plotting the results.
 
