@@ -1,4 +1,4 @@
-# Critical Assessment of Structure Prediction Round XVI (CASP16)
+# CASP16 (Critical Assessment of Structure Prediction Round XVI)
 
 This is the codebase for CASP16 monomer and oligomer assessment.
 
