@@ -1,15 +1,12 @@
-# use packages to deal with extentions
 import os
 import numpy as np
 import pandas as pd
-import sys
-import time
 
-oligomer_path = "/data/data1/conglab/qcong/CASP16/oligomers/"
-oligomer_path = "/home2/s439906/data/CASP16/oligomers_Sep_8/"
-oligomer_path = "/home2/s439906/data/CASP16/oligomers_Sep_17/"
-oligomer_path = "/home2/s439906/data/CASP16/oligomers_Sep_17_merge_v/"
-oligomer_path = "/home2/s439906/data/CASP16/oligomer_server_Nov_16/"
+# oligomer_path = "/data/data1/conglab/qcong/CASP16/oligomers/"
+# oligomer_path = "/home2/s439906/data/CASP16/oligomers_Sep_8/"
+# oligomer_path = "/home2/s439906/data/CASP16/oligomers_Sep_17/"
+# oligomer_path = "/home2/s439906/data/CASP16/oligomers_Sep_17_merge_v/"
+# oligomer_path = "/home2/s439906/data/CASP16/oligomer_server_Nov_16/"
 oligomer_path = "/home2/s439906/data/CASP16/oligomer_web_Nov_17/"
 
 oligomer_list = [txt for txt in os.listdir(
@@ -37,7 +34,6 @@ if not os.path.exists(oligomer_out_path):
     os.makedirs(oligomer_out_path)
 if not os.path.exists(oligomer_out_raw_path):
     os.makedirs(oligomer_out_raw_path)
-# remove everything in the output folder
 for file in os.listdir(oligomer_out_path):
     os.remove(oligomer_out_path + file)
 for file in os.listdir(oligomer_out_raw_path):

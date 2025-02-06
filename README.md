@@ -12,14 +12,30 @@ For monomer I am using my pipeline. For oligomers I am directly taking the resul
 
 `sum_z_scores.py` reads the z-scores and gets sum of z-scores for each measure. This will be used for plotting ranks.
 
+The above scripts will provide the input for downstream analysis.
+Other jupyter notebooks are used for plotting the results.
+
+
 `monomer_EU_info` is the metadata for the monomer EU data. It contains the information of each EU.
 
 `step7_results` is the file for difficulty partitioning.
 
-the jupyter notebooks are used for plotting the results.
 
 
 ## Oligomer
+
+`data_process.py` is the script for processing the data from CASP16 website. However, since we have our own pipeline, the official data is not used for the final results.
+
+`get_raw_scores.ipynb` is the script for getting the raw scores from Qian's pipeline. These raw data will be further used for analysis of performances.
+
+`rank_and_h2h_from_Qian.ipynb` is the script for ranking the models using Qian's data and generating the head-to-head test results.
+
+The above scripts will provide the input for downstream analysis.
+Other jupyter notebooks are used for plotting the results.
+
+`stoich_bg_distribution.csv` is the file for background distribution of stoichiometry in PDB.
+
+`target_weights` is the file for how many subunits in each target. They will be transformed into weights for each target under our pipeline.
 
 
 ## Qian's data
