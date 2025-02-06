@@ -6,6 +6,8 @@ Please check each directory for source code to rank groups and plot results.
 
 For monomer I am using my pipeline. For oligomers I am directly taking the results from Qian for convenience because there are complications in the methodology. Both are independently validated by each of us.
 
+Raw data and processed data are available upon request.
+
 ## Monomer
 
 `data_process.py` is the main script for processing the data. It reads the CASP16 data and generates the input files for ranking related scripts.
