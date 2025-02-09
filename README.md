@@ -6,7 +6,7 @@ Please check each directory for source code to rank groups and plot results. Not
 
 For monomer I am using my pipeline. For oligomers I am directly taking the results from Qian for convenience because there are complications in the methodology. Both are independently validated by each of us.
 
-Raw data and processed data are available upon request.
+**Raw scores and processed scores are available upon request.**
 
 ## Monomer
 
