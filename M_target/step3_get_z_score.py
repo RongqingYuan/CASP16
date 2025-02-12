@@ -9,15 +9,39 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--type', type=str, default="all")
 args = parser.parse_args()
 type = args.type
+input_dir = "/home2/s439906/data/CASP16/hybrid_Oct_10/"
 if type == "pp":
     output = "./step3_pp/"
+    scores = ["prot_per_interface_qs_best",
+              "prot_per_interface_ics_trimmed",
+              "prot_per_interface_ips_trimmed",
+              "lDDT",
+              "TMscore",
+              "GlobDockQ"]
 elif type == "pn":
     output = "./step3_pn/"
+    scores = ["prot_nucl_per_interface_qs_best",
+              "prot_nucl_per_interface_ics_trimmed",
+              "prot_nucl_per_interface_ips_trimmed",
+              "lDDT",
+              "TMscore",
+              "GlobDockQ"]
 elif type == "all":
     output = "./step3_all/"
+    scores = ["prot_per_interface_qs_best",
+              "prot_per_interface_ics_trimmed",
+              "prot_per_interface_ips_trimmed",
+              "prot_nucl_per_interface_qs_best",
+              "prot_nucl_per_interface_ics_trimmed",
+              "prot_nucl_per_interface_ips_trimmed",
+              "lDDT",
+              "TMscore",
+              "GlobDockQ"]
 else:
     print("type must be pp, pn or all")
     sys.exit()
+if not os.path.exists(output):
+    os.makedirs(output)
 pp_score_dir = "./step1_pp/"
 pn_score_dir = "./step1_pn/"
 target_score_dir = "./step2/"
@@ -40,9 +64,6 @@ with open(pn_score_dir + "EU_weight.txt", "r") as f:
         pn_weight_dict[line[0]] = int(line[1]) ** (1/3)
 
 
-if not os.path.exists(output):
-    os.makedirs(output)
-input_dir = "/home2/s439906/data/CASP16/hybrid_Oct_10/"
 targets = [txt.split('.')[0]
            for txt in os.listdir(
     input_dir) if txt.endswith(".txt") and "M0" not in txt]
@@ -53,30 +74,6 @@ targets.remove("M1297")
 targets.sort()
 print(targets, len(targets))
 no_pp_targets = ["M1212", "M1221", "M1224", "M1276", "M1282"]
-if type == "pp":
-    scores = ["prot_per_interface_qs_best",
-              "prot_per_interface_ics_trimmed",
-              "prot_per_interface_ips_trimmed",
-              "lDDT",
-              "TMscore",
-              "GlobDockQ"]
-elif type == "pn":
-    scores = ["prot_nucl_per_interface_qs_best",
-              "prot_nucl_per_interface_ics_trimmed",
-              "prot_nucl_per_interface_ips_trimmed",
-              "lDDT",
-              "TMscore",
-              "GlobDockQ"]
-elif type == "all":
-    scores = ["prot_per_interface_qs_best",
-              "prot_per_interface_ics_trimmed",
-              "prot_per_interface_ips_trimmed",
-              "prot_nucl_per_interface_qs_best",
-              "prot_nucl_per_interface_ics_trimmed",
-              "prot_nucl_per_interface_ips_trimmed",
-              "lDDT",
-              "TMscore",
-              "GlobDockQ"]
 
 
 all_df = pd.DataFrame()
