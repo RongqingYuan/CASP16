@@ -42,6 +42,7 @@ monomer/heatmap*/
 monomer/score_*/
 monomer/out_*/
 monomer/check_with_qian/
+monomer/check_data/
 monomer/for_Jing/
 monomer/for_Arne/
 monomer/for_Dima/
@@ -159,6 +160,14 @@ M_target/sum_EU/
 M_target/group_by_target_EU/
 M_target/bootstrap_EU/
 M_target/heatmap*/
+M_target/step1/
+M_target/step1_pn/
+M_target/step1_pp/
+M_target/step2/
+M_target/step3_all/
+M_target/step3_pp/
+M_target/step3_pn/
+M_target/step5/
 M_target/*err
 M_target/*log
 
