@@ -45,6 +45,20 @@ else:
     sys.exit()
 targets = [csv for csv in os.listdir(input) if csv.endswith("_zscore.csv")]
 targets.sort()
+print(targets, len(targets))
+no_pp_targets = ["M1212", "M1221", "M1224", "M1276", "M1282"]
+pp_score_dir = "./step1_pp/"
+pn_score_dir = "./step1_pn/"
+pp_weight_dict = {}
+pn_weight_dict = {}
+with open(pp_score_dir + "EU_weight.txt", "r") as f:
+    for line in f:
+        line = line.split()
+        pp_weight_dict[line[0]] = int(line[1]) ** (1/3)
+with open(pn_score_dir + "EU_weight.txt", "r") as f:
+    for line in f:
+        line = line.split()
+        pn_weight_dict[line[0]] = int(line[1]) ** (1/3)
 data = pd.DataFrame()
 for target in targets:
     data_tmp = pd.read_csv(input + target, index_col=0)
