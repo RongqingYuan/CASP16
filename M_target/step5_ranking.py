@@ -4,6 +4,9 @@ import pandas as pd
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from matplotlib.gridspec import GridSpec
+import seaborn as sns
 
 parser = argparse.ArgumentParser()
 # three types of input: pp, pn, all
@@ -60,6 +63,7 @@ targets = [csv for csv in os.listdir(input) if csv.endswith("_zscore.csv")]
 targets.sort()
 print(targets, len(targets))
 no_pp_targets = ["M1212", "M1221", "M1224", "M1276", "M1282"]
+
 
 data = pd.DataFrame()
 pp_qs_best_df = pd.DataFrame()
@@ -266,9 +270,45 @@ for target in targets:
 # print(pn_ips_df.shape)
 # print(lDDT_df.shape)
 # print(TMscore_df.shape)
-# print(GlobDockQ_df.shape)
+print(GlobDockQ_df.shape)
+print(GlobDockQ_df)
+# breakpoint()
+
+pp_score_dir = "./step1_pp/"
+pn_score_dir = "./step1_pn/"
+pp_weight_dict = {}
+pn_weight_dict = {}
+with open(pp_score_dir + "EU_weight.txt", "r") as f:
+    for line in f:
+        line = line.split()
+        pp_weight_dict[line[0]] = int(line[1]) ** (1/3)
+with open(pn_score_dir + "EU_weight.txt", "r") as f:
+    for line in f:
+        line = line.split()
+        pn_weight_dict[line[0]] = int(line[1]) ** (1/3)
 top_n = 20
 if type == "pp":
+    mask = pp_qs_best_df.isna()
+    # impute the missing values with 1/6 * pn_weight_dict[column_name]
+    for column_name in pp_qs_best_df.columns:
+        pp_qs_best_df[column_name] = pp_qs_best_df[column_name].fillna(
+            -1/6 * pp_weight_dict[column_name]*2)
+    for column_name in pp_ics_df.columns:
+        pp_ics_df[column_name] = pp_ics_df[column_name].fillna(
+            -1/6 * pp_weight_dict[column_name]*2)
+    for column_name in pp_ips_df.columns:
+        pp_ips_df[column_name] = pp_ips_df[column_name].fillna(
+            - 1/6 * pp_weight_dict[column_name]*2)
+    for column_name in lDDT_df.columns:
+        lDDT_df[column_name] = lDDT_df[column_name].fillna(
+            -1/6 * 2)
+    for column_name in TMscore_df.columns:
+        TMscore_df[column_name] = TMscore_df[column_name].fillna(
+            -1/6 * 2)
+    for column_name in GlobDockQ_df.columns:
+        GlobDockQ_df[column_name] = GlobDockQ_df[column_name].fillna(
+            -1/6 * 2)
+
     score_dict["pp_qs_best"] = pp_qs_best_df
     score_dict["pp_ics"] = pp_ics_df
     score_dict["pp_ips"] = pp_ips_df
@@ -331,7 +371,98 @@ if type == "pp":
     # plt.show()
     fig.savefig(output + f"{model}_top_n={top_n}_{type}.png")
 
+    heatmap_data = None
+    for key in score_dict.keys():
+        if heatmap_data is None:
+            heatmap_data = score_dict[key]
+        else:
+            # element-wise addition
+            heatmap_data = heatmap_data + score_dict[key]
+    # check if there is any nan value in heatmap_data
+    print(heatmap_data.isnull().values.any())
+    sum = heatmap_data.sum(axis=1)
+    sorted_indices = sum.sort_values(ascending=True).index
+    sorted_heatmap_data = heatmap_data.loc[sorted_indices].reset_index(
+        drop=True)
+    sorted_sum = sum.loc[sorted_indices].reset_index(drop=True)
+    sorted_mask = pd.DataFrame(
+        mask, index=heatmap_data.index).loc[sorted_indices].reset_index(drop=True)
+
+    # use mask to mask the data. will be used for heatmap
+    masked_data = sorted_heatmap_data.copy()
+    masked_data[sorted_mask] = np.nan
+
+    # set up the colormap
+    cmap = plt.cm.YlGn
+    cmap = ListedColormap(cmap(np.linspace(0, 1, 256)))
+    cmap.set_bad(color='gray')  # set the masked area to gray
+
+    # set up the figure and gridspec
+    fig = plt.figure(figsize=(20, 15))
+    gs = GridSpec(1, 2, width_ratios=[4, 1], wspace=0.3)
+
+    # plot the heatmap
+    ax0 = fig.add_subplot(gs[0])
+    sns.heatmap(masked_data, cmap=cmap, cbar=True, ax=ax0)
+    ax0.set_yticklabels(
+        [f'{i}' for i in sorted_indices], rotation=0)  # use the same order as the row sum
+    ax0.set_xticklabels(sorted_heatmap_data.columns, rotation=90)
+
+    # set x tick font size
+    ax0.tick_params(axis='x', labelsize=16)
+    # set y tick font size
+    ax0.tick_params(axis='y', labelsize=16)
+    ax0.set_title(
+        f"Heatmap for sum z-scores of {type} interfaces", fontsize=20, pad=20)
+
+    # plot the row sum
+    ax1 = fig.add_subplot(gs[1], sharey=ax0)
+    y_pos = range(len(sorted_sum))
+    y_pos = [i+0.5 for i in y_pos]  # change the position of the bars
+    ax1.barh(y_pos, sorted_sum, color='tan')
+    # ax1.margins(y=0.5)
+    ax1.set_yticks(range(len(sorted_sum)))
+    ax1.set_yticklabels(
+        [f'{i}' for i in sorted_indices], rotation=0)  # use the same order as the heatmap
+    # ax1.spines['bottom'].set_position(('outward', 10))  # 将 x 轴向下移动 10 点
+    # ymin, ymax = ax1.get_ylim()  # 获取当前的 y 轴范围
+    # ax1.set_ylim(ymin - 1, ymax-1)  # 为最底部条形预留空间
+
+    # set x tick font size
+    ax1.tick_params(axis='x', labelsize=16)
+    # set y tick font size
+    ax1.tick_params(axis='y', labelsize=16)
+    ax1.invert_yaxis()  # flip the y-axis
+    ax1.set_xlabel("Sum", fontsize=16)
+    ax1.set_title("Group sum z-scores", fontsize=20, pad=20)
+
+    # save the figure
+    # plt.tight_layout()
+    # plt.show()
+    plt.savefig(output + f"heatmap_{model}_top_n={top_n}_{type}.png", dpi=300)
+
+
 elif type == "pn":
+    mask = pn_qs_best_df.isna()
+    # impute the missing values with 1/6 * pn_weight_dict[column_name]
+    for column_name in pn_qs_best_df.columns:
+        pn_qs_best_df[column_name] = pn_qs_best_df[column_name].fillna(
+            -1/6 * pn_weight_dict[column_name]*2)
+    for column_name in pn_ics_df.columns:
+        pn_ics_df[column_name] = pn_ics_df[column_name].fillna(
+            -1/6 * pn_weight_dict[column_name]*2)
+    for column_name in pn_ips_df.columns:
+        pn_ips_df[column_name] = pn_ips_df[column_name].fillna(
+            - 1/6 * pn_weight_dict[column_name]*2)
+    for column_name in lDDT_df.columns:
+        lDDT_df[column_name] = lDDT_df[column_name].fillna(
+            -1/6 * 2)
+    for column_name in TMscore_df.columns:
+        TMscore_df[column_name] = TMscore_df[column_name].fillna(
+            -1/6 * 2)
+    for column_name in GlobDockQ_df.columns:
+        GlobDockQ_df[column_name] = GlobDockQ_df[column_name].fillna(
+            -1/6 * 2)
     score_dict["pn_qs_best"] = pn_qs_best_df
     score_dict["pn_ics"] = pn_ics_df
     score_dict["pn_ips"] = pn_ips_df
@@ -394,8 +525,129 @@ elif type == "pn":
     plt.tight_layout()
     # plt.show()
     fig.savefig(output + f"{model}_top_n={top_n}_{type}.png")
+    heatmap_data = None
+    for key in score_dict.keys():
+        if heatmap_data is None:
+            heatmap_data = score_dict[key]
+        else:
+            # element-wise addition
+            heatmap_data = heatmap_data + score_dict[key]
+    # check if there is any nan value in heatmap_data
+    print(heatmap_data.isnull().values.any())
+    sum = heatmap_data.sum(axis=1)
+    sorted_indices = sum.sort_values(ascending=True).index
+    sorted_heatmap_data = heatmap_data.loc[sorted_indices].reset_index(
+        drop=True)
+    sorted_sum = sum.loc[sorted_indices].reset_index(drop=True)
+    sorted_mask = pd.DataFrame(
+        mask, index=heatmap_data.index).loc[sorted_indices].reset_index(drop=True)
+
+    # use mask to mask the data. will be used for heatmap
+    masked_data = sorted_heatmap_data.copy()
+    masked_data[sorted_mask] = np.nan
+
+    # set up the colormap
+    cmap = plt.cm.YlGn
+    cmap = ListedColormap(cmap(np.linspace(0, 1, 256)))
+    cmap.set_bad(color='gray')  # set the masked area to gray
+
+    # set up the figure and gridspec
+    fig = plt.figure(figsize=(20, 15))
+    gs = GridSpec(1, 2, width_ratios=[4, 1], wspace=0.3)
+
+    # plot the heatmap
+    ax0 = fig.add_subplot(gs[0])
+    sns.heatmap(masked_data, cmap=cmap, cbar=True, ax=ax0)
+    ax0.set_yticklabels(
+        [f'{i}' for i in sorted_indices], rotation=0)  # use the same order as the row sum
+    ax0.set_xticklabels(sorted_heatmap_data.columns, rotation=90)
+
+    # set x tick font size
+    ax0.tick_params(axis='x', labelsize=16)
+    # set y tick font size
+    ax0.tick_params(axis='y', labelsize=16)
+    ax0.set_title(
+        f"Heatmap for sum z-scores of {type} interfaces", fontsize=20, pad=20)
+
+    # plot the row sum
+    ax1 = fig.add_subplot(gs[1], sharey=ax0)
+    y_pos = range(len(sorted_sum))
+    y_pos = [i+0.5 for i in y_pos]  # change the position of the bars
+    ax1.barh(y_pos, sorted_sum, color='tan')
+    # ax1.margins(y=0.5)
+    ax1.set_yticks(range(len(sorted_sum)))
+    ax1.set_yticklabels(
+        [f'{i}' for i in sorted_indices], rotation=0)  # use the same order as the heatmap
+    # ax1.spines['bottom'].set_position(('outward', 10))  # 将 x 轴向下移动 10 点
+    # ymin, ymax = ax1.get_ylim()  # 获取当前的 y 轴范围
+    # ax1.set_ylim(ymin - 1, ymax-1)  # 为最底部条形预留空间
+
+    # set x tick font size
+    ax1.tick_params(axis='x', labelsize=16)
+    # set y tick font size
+    ax1.tick_params(axis='y', labelsize=16)
+    ax1.invert_yaxis()  # flip the y-axis
+    ax1.set_xlabel("Sum", fontsize=16)
+    ax1.set_title("Group sum z-scores", fontsize=20, pad=20)
+
+    # save the figure
+    # plt.tight_layout()
+    # plt.show()
+    plt.savefig(output + f"heatmap_{model}_top_n={top_n}_{type}.png", dpi=300)
 
 elif type == "all":
+    mask = pp_qs_best_df.isna()
+    for column_name in pp_qs_best_df.columns:
+        if column_name in no_pp_targets:
+            pp_qs_best_df[column_name] = pp_qs_best_df[column_name].fillna(
+                0 * pp_weight_dict[column_name]*2)
+        else:
+            pp_qs_best_df[column_name] = pp_qs_best_df[column_name].fillna(
+                -1/12 * pp_weight_dict[column_name]*2)
+    for column_name in pp_ics_df.columns:
+        if column_name in no_pp_targets:
+            pp_ics_df[column_name] = pp_ics_df[column_name].fillna(
+                0 * pp_weight_dict[column_name]*2)
+        else:
+            pp_ics_df[column_name] = pp_ics_df[column_name].fillna(
+                -1/12 * pp_weight_dict[column_name]*2)
+    for column_name in pp_ips_df.columns:
+        if column_name in no_pp_targets:
+            pp_ips_df[column_name] = pp_ips_df[column_name].fillna(
+                0 * pp_weight_dict[column_name]*2)
+        else:
+            pp_ips_df[column_name] = pp_ips_df[column_name].fillna(
+                - 1/12 * pp_weight_dict[column_name]*2)
+    for column_name in pn_qs_best_df.columns:
+        if column_name in no_pp_targets:
+            pn_qs_best_df[column_name] = pn_qs_best_df[column_name].fillna(
+                -1/6 * pn_weight_dict[column_name]*2)
+        else:
+            pn_qs_best_df[column_name] = pn_qs_best_df[column_name].fillna(
+                -1/12 * pn_weight_dict[column_name]*2)
+    for column_name in pn_ics_df.columns:
+        if column_name in no_pp_targets:
+            pn_ics_df[column_name] = pn_ics_df[column_name].fillna(
+                -1/6 * pn_weight_dict[column_name]*2)
+        else:
+            pn_ics_df[column_name] = pn_ics_df[column_name].fillna(
+                -1/12 * pn_weight_dict[column_name]*2)
+    for column_name in pn_ips_df.columns:
+        if column_name in no_pp_targets:
+            pn_ips_df[column_name] = pn_ips_df[column_name].fillna(
+                -1/6 * pn_weight_dict[column_name]*2)
+        else:
+            pn_ips_df[column_name] = pn_ips_df[column_name].fillna(
+                - 1/12 * pn_weight_dict[column_name]*2)
+    for column_name in lDDT_df.columns:
+        lDDT_df[column_name] = lDDT_df[column_name].fillna(
+            -1/6 * 2)
+    for column_name in TMscore_df.columns:
+        TMscore_df[column_name] = TMscore_df[column_name].fillna(
+            -1/6 * 2)
+    for column_name in GlobDockQ_df.columns:
+        GlobDockQ_df[column_name] = GlobDockQ_df[column_name].fillna(
+            -1/6 * 2)
     score_dict["pp_qs_best"] = pp_qs_best_df
     score_dict["pp_ics"] = pp_ics_df
     score_dict["pp_ips"] = pp_ips_df
@@ -405,7 +657,6 @@ elif type == "all":
     score_dict["lDDT"] = lDDT_df
     score_dict["TMscore"] = TMscore_df
     score_dict["GlobDockQ"] = GlobDockQ_df
-
     for key in score_dict.keys():
         score = score_dict[key]
         score_sum = score.sum(axis=1)
@@ -466,3 +717,73 @@ elif type == "all":
     plt.tight_layout()
     # plt.show()
     fig.savefig(output + f"{model}_top_n={top_n}_{type}.png")
+    heatmap_data = None
+    for key in score_dict.keys():
+        if heatmap_data is None:
+            heatmap_data = score_dict[key]
+        else:
+            # element-wise addition
+            heatmap_data = heatmap_data + score_dict[key]
+    # check if there is any nan value in heatmap_data
+    print(heatmap_data.isnull().values.any())
+    sum = heatmap_data.sum(axis=1)
+    sorted_indices = sum.sort_values(ascending=True).index
+    sorted_heatmap_data = heatmap_data.loc[sorted_indices].reset_index(
+        drop=True)
+    sorted_sum = sum.loc[sorted_indices].reset_index(drop=True)
+    sorted_mask = pd.DataFrame(
+        mask, index=heatmap_data.index).loc[sorted_indices].reset_index(drop=True)
+
+    # use mask to mask the data. will be used for heatmap
+    masked_data = sorted_heatmap_data.copy()
+    masked_data[sorted_mask] = np.nan
+
+    # set up the colormap
+    cmap = plt.cm.YlGn
+    cmap = ListedColormap(cmap(np.linspace(0, 1, 256)))
+    cmap.set_bad(color='gray')  # set the masked area to gray
+
+    # set up the figure and gridspec
+    fig = plt.figure(figsize=(20, 15), dpi=300)
+    gs = GridSpec(1, 2, width_ratios=[4, 1], wspace=0.3)
+    # plot the heatmap
+    ax0 = fig.add_subplot(gs[0])
+    y_ticklabels = [f'{i}' for i in sorted_indices]
+    sns.heatmap(masked_data, cmap=cmap, cbar=True, ax=ax0,
+                xticklabels=sorted_heatmap_data.columns, yticklabels=y_ticklabels)
+    # use the same order as the column sum
+    ax0.set_xticklabels(ax0.get_xticklabels(), rotation=90, fontsize=16)
+    ax0.set_yticklabels(ax0.get_yticklabels(), rotation=0,  fontsize=16)
+
+    # # set x tick font size
+    # ax0.tick_params(axis='x', labelsize=16)
+    # # set y tick font size
+    # ax0.tick_params(axis='y', labelsize=16)
+    ax0.set_title(
+        f"Heatmap for sum z-scores of {type} interfaces", fontsize=20, pad=20)
+
+    # plot the row sum
+    ax1 = fig.add_subplot(gs[1], sharey=ax0)
+    y_pos = range(len(sorted_sum))
+    y_pos = [i+0.5 for i in y_pos]  # change the position of the bars
+    ax1.barh(y_pos, sorted_sum, color='tan')
+    # ax1.margins(y=0.5)
+    ax1.set_yticks(range(len(sorted_sum)))
+    ax1.set_yticklabels(
+        [f'{i}' for i in sorted_indices], rotation=0)  # use the same order as the heatmap
+    # ax1.spines['bottom'].set_position(('outward', 10))  # 将 x 轴向下移动 10 点
+    # ymin, ymax = ax1.get_ylim()  # 获取当前的 y 轴范围
+    # ax1.set_ylim(ymin - 1, ymax-1)  # 为最底部条形预留空间
+
+    # set x tick font size
+    ax1.tick_params(axis='x', labelsize=16)
+    # set y tick font size
+    ax1.tick_params(axis='y', labelsize=16)
+    ax1.invert_yaxis()  # flip the y-axis
+    ax1.set_xlabel("Sum", fontsize=16)
+    ax1.set_title("Group sum z-scores", fontsize=20, pad=20)
+
+    # save the figure
+    # plt.tight_layout()
+    # plt.show()
+    plt.savefig(output + f"heatmap_{model}_top_n={top_n}_{type}.png", dpi=300)
