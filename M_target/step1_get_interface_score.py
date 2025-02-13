@@ -330,36 +330,52 @@ def group_by_target(results_dir, result_files, out_dir,
 # results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/model_results/"
 # results_dir = "/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces_20240917/nr_interfaces/"
 
-
 parser = argparse.ArgumentParser(
     description="options for interface score processing")
-parser.add_argument("--input_dir", type=str, default="./M_target_csv_v1/")
+parser.add_argument("--input", type=str, default="./M_target_csv_v1/")
+parser.add_argument("--type", type=str, default="pn")
+# parser.add_argument("--features", type=list,
+#                     default=[
+#                         # "prot_nucl_qs_global",
 
-parser.add_argument("--features", type=list,
-                    default=[
-                        # "prot_nucl_qs_global",
-                        # "prot_nucl_per_interface_qs_best",
-                        # "prot_nucl_per_interface_ics_trimmed",
-                        # "prot_nucl_per_interface_ips_trimmed",
+#                         # "prot_nucl_per_interface_qs_best",
+#                         # "prot_nucl_per_interface_ics_trimmed",
+#                         # "prot_nucl_per_interface_ips_trimmed",
 
-                        "prot_per_interface_qs_best",
-                        "prot_per_interface_ics_trimmed",
-                        "prot_per_interface_ips_trimmed",
-                    ]
-                    )
-parser.add_argument("--output_dir", type=str, default="./step1_pp/")
+#                         "prot_per_interface_qs_best",
+#                         "prot_per_interface_ics_trimmed",
+#                         "prot_per_interface_ips_trimmed",
+#                     ]
+#                     )
+# parser.add_argument("--output_dir", type=str, default="./step1_pp/")
 parser.add_argument("--score_type", type=str, default="all")
 parser.add_argument("--model", type=str, default="best")
 parser.add_argument("--mode", type=str, default="all")
 parser.add_argument("--impute_value", type=int, default=-2)
 
 args = parser.parse_args()
-input_dir = args.input_dir
-output_dir = args.output_dir
+input_dir = args.input
 model = args.model
 mode = args.mode
 impute_value = args.impute_value
-features = args.features
+
+if args.type == "pp":
+    features = [
+        "prot_per_interface_qs_best",
+        "prot_per_interface_ics_trimmed",
+        "prot_per_interface_ips_trimmed",
+    ]
+    output_dir = "./step1_pp/"
+elif args.type == "pn":
+    features = [
+        "prot_nucl_per_interface_qs_best",
+        "prot_nucl_per_interface_ics_trimmed",
+        "prot_nucl_per_interface_ips_trimmed",
+    ]
+    output_dir = "./step1_pn/"
+else:
+    print("wrong type")
+    sys.exit(1)
 result_files = [result for result in os.listdir(
     input_dir) if result.endswith(".csv")]
 
