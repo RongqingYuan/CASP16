@@ -2,9 +2,11 @@
 
 This is the codebase for CASP16 monomer and oligomer assessment.
 
-Please check each directory for source code to rank groups and plot results.
+Please check each directory for source code to rank groups and plot results. Note that the pipeline for each assessment is rather different.
 
-For monomer I am using my pipeline. For oligomers I am directly taking the results from Qian for convenience. Both are independently validated by each of us.
+For monomer I am using my pipeline. For oligomers I am directly taking the results from Qian for convenience because there are complications in the methodology. Both are independently validated by each of us.
+
+**Raw scores and processed scores are available upon request.**
 
 ## Monomer
 
@@ -13,10 +15,7 @@ For monomer I am using my pipeline. For oligomers I am directly taking the resul
 `get_raw_scores.py` reads the input files and generates the raw scores for each model, which will further be used for analysis of performances.
 
 `sum_z_scores.py` reads the z-scores and gets sum of z-scores for each measure. This will be used for plotting ranks.
-
-`ranking.ipynb` is the script for ranking the models.
-
-`head_to_head_playground.ipynb` is the script for generating the head-to-head test results.
+`ranking.ipynb` and `head_to_head_playground.ipynb` are the scripts for ranking the models and generating the head-to-head test results.
 
 The above scripts will provide the input for downstream analysis.
 Other jupyter notebooks are used for plotting the results.
