@@ -94,8 +94,14 @@ def get_group_by_target(csv_list, csv_path, out_path, feature, model, mode):
 
 parser = argparse.ArgumentParser(description="options for sum z-score")
 parser.add_argument('--csv_path', type=str,
-                    default="./monomer_data_newest/raw_data/")
-parser.add_argument('--out_path', type=str, default="./score_T1/")
+                    # default="./monomer_data_newest/raw_data/"
+                    default="./monomer_data_final/raw_data/"
+
+                    )
+parser.add_argument('--out_path', type=str,
+                    # default="./score_T1/"
+                    default="./score_raw_final_T1/"
+                    )
 parser.add_argument('--model', type=str,
                     help='first, best or sixth', default='best')
 parser.add_argument('--mode', type=str,
@@ -141,8 +147,7 @@ features = ['GDT_TS',
             'reLLG_const'
             ]
 for feature in features:
-    get_group_by_target(csv_list, csv_path, out_path,
-                        feature, model, mode, impute_value=impute_value)
+    get_group_by_target(csv_list, csv_path, out_path, feature, model, mode)
     print("Finished processing {}".format(feature))
 
 # for csv in csv_list:

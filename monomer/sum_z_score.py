@@ -160,8 +160,12 @@ def get_group_by_target(csv_list, csv_path, out_path,
 parser = argparse.ArgumentParser(description="options for sum z-score")
 
 parser.add_argument('--csv_path', type=str,
-                    default="./monomer_data_newest/processed/")
-parser.add_argument('--out_path', type=str, default="./score_all/")
+                    # default="./monomer_data_newest/processed/"
+                    default="./monomer_data_final/processed/")
+parser.add_argument('--out_path', type=str,
+                    # default="./score_all/"
+                    default="./score_final_all/"
+                    )
 parser.add_argument('--model', type=str,
                     help='first, best or sixth', default='best')
 parser.add_argument('--mode', type=str,

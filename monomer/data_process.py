@@ -6,12 +6,16 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--phase', type=str, default="0,1,2")
 parser.add_argument('--input_path', type=str,
-                    # default="/home2/s439906/data/CASP16/monomers_EU_merge_v/"
-                    # default="/home2/s439906/data/CASP16/monomer_inputs/"
-                    default="/home2/s439906/data/CASP16/inputs/"
+                    # # default="/home2/s439906/data/CASP16/monomers_EU_merge_v/"
+                    # # default="/home2/s439906/data/CASP16/monomer_inputs/"
+
+                    # default="/home2/s439906/data/CASP16/inputs/"
+                    default="/home2/s439906/data/CASP16/web_Feb_7/"
                     )
 parser.add_argument('--output_path', type=str,
-                    default="./monomer_data_newest/")
+                    # default="./monomer_data_newest/"
+                    default="./monomer_data_final/"
+                    )
 
 args = parser.parse_args()
 phase = args.phase
@@ -66,7 +70,7 @@ for monomer in monomer_list:
     data.columns = data.iloc[0]
     data = data.drop(0)
 
-    # BUG 1 if there is a header called MODEL, change it to Model
+    # BUG 1.1 if there is a header called MODEL, change it to Model
     # set the "Model" column as the index
     if "MODEL" in data.columns:
         data = data.rename(columns={"MODEL": "Model"})
@@ -75,7 +79,7 @@ for monomer in monomer_list:
     except KeyError:
         print("KeyError: ", monomer)
         sys.exit()
-    # BUG 1.1 some monomer files have "MolProb" instead of "MolPrb_Score". Set the "MolPrb_Score" column as the index
+    # BUG 1.2 some monomer files have "MolProb" instead of "MolPrb_Score". Set the "MolPrb_Score" column as the index
     if "MolProb" in data.columns:
         data = data.rename(columns={"MolProb": "MolPrb_Score"})
 
@@ -86,7 +90,7 @@ for monomer in monomer_list:
         data_copy.index = data.index.map(
             lambda x: x + "-" + domain_id if "-D" not in x else x)
     elif "-D" not in monomer:
-        domain_id = "D0"  # temporary solution
+        domain_id = "D0"  # temporary solution, but will work
         data_copy.index = data.index.map(
             lambda x: x + "-" + domain_id if "-D" not in x else x)
 
