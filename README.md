@@ -55,3 +55,31 @@ stage1: raw data process
 stage2: produce rankings
 
 stage3: get insights from the data
+
+
+
+## submitted pdb path
+
+`/home2/s439906/data/CASP16/CASP15_tarball_new/targets/Targets_submitted/`: the submitted target pdb files for CASP15.
+
+`/home2/s439906/data/CASP16/CASP16_pdb/target_submit/Targets_submitted/` and `/data/data1/conglab/jzhan6/CASP16/targetPDBs/alltargets/`: the submitted target pdb files for CASP16.
+
+## monomer pdb path
+
+`/home2/s439906/data/CASP16/CASP15_tarball_new/targets/Targets_processed/`: the processed target pdb files for CASP15.
+
+`/home2/s439906/data/CASP16/CASP15_tarball_new/predictions_trimmed_to_domains/`: the models pdb files for CASP15.
+
+`/data/data1/conglab/qcong/CASP16/stage1_monomer_inputs/targets/`: the processed target pdb files for CASP16.
+
+`/data/data1/conglab/jzhan6/CASP16/targetPDBs/predictions_trimmed_to_domains/predictions/`: the models pdb files for CASP16.
+
+## oligomer pdb path
+
+`/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_20240918/`: the processed target pdb files for CASP16.
+
+`/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_oligo_interfaces/models/prediction_pdbs/`: the models pdb files for CASP16.
+
+## hybrid pdb path
+
+`/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_hybrid_20240922/pdbs`: the processed target pdb files for CASP16.
