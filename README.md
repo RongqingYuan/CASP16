@@ -62,7 +62,7 @@ stage3: get insights from the data
 
 `/home2/s439906/data/CASP16/CASP15_tarball_new/targets/Targets_submitted/`: the submitted target pdb files for CASP15.
 
-`/home2/s439906/data/CASP16/CASP16_pdb/target_submit/Targets_submitted/` and `/data/data1/conglab/jzhan6/CASP16/targetPDBs/alltargets/`: the submitted target pdb files for CASP16.
+`/home2/s439906/data/CASP16/CASP16_pdb/target_submit/Targets_submitted/`: the submitted target pdb files for CASP16.
 
 ## monomer pdb path
 
@@ -70,7 +70,7 @@ stage3: get insights from the data
 
 `/home2/s439906/data/CASP16/CASP15_tarball_new/predictions_trimmed_to_domains/`: the models pdb files for CASP15.
 
-`/data/data1/conglab/qcong/CASP16/stage1_monomer_inputs/targets/`: the processed target pdb files for CASP16.
+`/data/data1/conglab/qcong/CASP16/stage1_monomer_inputs/targets/` and `/data/data1/conglab/jzhan6/CASP16/targetPDBs/alltargets/`: the processed target pdb files for CASP16.
 
 `/data/data1/conglab/jzhan6/CASP16/targetPDBs/predictions_trimmed_to_domains/predictions/`: the models pdb files for CASP16.
 
@@ -83,3 +83,9 @@ stage3: get insights from the data
 ## hybrid pdb path
 
 `/data/data1/conglab/jzhan6/CASP16/targetPDBs/Targets_hybrid_20240922/pdbs`: the processed target pdb files for CASP16.
+
+`/data/data1/conglab/jzhan6/CASP16/targetPDBs/predictions_hybrid/`: the models pdb files for CASP16.
+
+## massivefold pdb path
+
+`/data/data3/conglab/jzhan6/massivefold/` contains the massivefold models for CASP16.
